@@ -23,6 +23,13 @@
 #include <omp.h>
 #endif /* OOMPH_BENCHMARKS_MT */
 
+#ifdef USE_WAITALL
+const char* syncmode = "waitall";
+#else
+const char* syncmode = "wait";
+#endif
+const char* waitmode = "wait";
+
 int
 main(int argc, char* argv[])
 {
@@ -155,8 +162,26 @@ main(int argc, char* argv[])
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 1)
     {
+        double elapsed = t1.toc();
         t1.vtoc();
         t1.vtoc("final ", (double)niter * size * buff_size);
+        double bw = ((double)(niter * size) * buff_size) / elapsed;
+        // clang-format off
+        std::cout << "time:       " << elapsed/1000000 << "s\n";
+        std::cout << "final MB/s: " << bw << "\n";
+        std::cout << "CSVData"
+                  << ", niter, " << niter
+                  << ", buff_size, " << buff_size
+                  << ", inflight, " << inflight
+                  << ", num_threads, " << cmd_args.num_threads
+                  << ", syncmode, " << syncmode
+                  << ", waitmode, " << waitmode
+                  << ", transport, " << "Native-MPI"
+                  << ", BW MB/s, " << bw
+                  << ", progress, " << "unspecified"
+                  << ", endpoint, " << "unspecified"
+                  << "\n";
+        // clang-format on
     }
 
     return 0;
