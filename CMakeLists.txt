@@ -83,7 +83,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.inc.in
 # ---------------------------------------------------------------------
 set(OOMPH_WITH_TESTING OFF CACHE BOOL "True if tests shall be built")
 if (OOMPH_WITH_TESTING)
-    enable_testing()
+    set(CTEST_TEST_TIMEOUT 30)
+    include(CTest)
     add_subdirectory(test)
 endif()
 
