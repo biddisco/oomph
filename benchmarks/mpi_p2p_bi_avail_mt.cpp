@@ -209,8 +209,10 @@ main(int argc, char* argv[])
                 }
             }
 #endif
-        }
+        delete []sbuffers;
+        delete []rbuffers;
     }
+}
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 1)
