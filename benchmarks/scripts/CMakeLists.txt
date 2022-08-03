@@ -17,6 +17,7 @@
 #-------------------------------------------------------
 
 set(OOMPH_BENCHMARK_SCRIPTS_PATH "${PROJECT_BINARY_DIR}/scripts" CACHE PATH "Directory to place batch scripts in")
+mark_as_advanced(OOMPH_BENCHMARK_SCRIPTS_PATH)
 
 # Make sure scripts dir exists
 execute_process(COMMAND "${CMAKE_COMMAND}" -E make_directory "${OOMPH_BENCHMARK_SCRIPTS_PATH}")

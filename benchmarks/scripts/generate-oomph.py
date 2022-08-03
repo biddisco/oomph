@@ -65,12 +65,14 @@ if is_notebook():
 def get_command_line_args(notebook_args=None):
     parser = argparse.ArgumentParser(description='Generator for oomph benchmarks')
     parser.add_argument('-d', '--dir', default=cwd, action='store', help='base directory to generate job scripts in')
+    parser.add_argument('-t', '--type', default='normal', action='store', help='normal, timed or native for different test types')
+    parser.add_argument('-m', '--timeout', default=120, action='store', help='executable timeout period')
     if is_notebook():
         parser.add_argument('-f', help='seems to be defaulted by jupyter')
         return parser.parse_args(notebook_args)
     return parser.parse_args()
 
-notebook_args = '--dir /home/biddisco/benchmarking-results/test'.split()
+notebook_args = '--type=native --dir /home/biddisco/benchmarking-results/test'.split()
 if is_notebook():
     args = get_command_line_args(notebook_args)
 else:
@@ -103,29 +105,6 @@ print(f'Generating scripts in {run_dir}')
 # In[6]:
 
 
-#
-# experimental code to try to generate a sensible number of messages given a message size
-#
-def sigmoid(x):
-  return 1 / (1 + math.exp(-x))
-
-def normalized_sigmoid_fkt(center, width, x):
-   '''
-   Returns array of a horizontal mirrored normalized sigmoid function
-   output between 0 and 1
-   '''
-   s = 1/(1+np.exp(width*(x-center)))
-   return s
-   #return 1*(s-min(s))/(max(s)-min(s)) # normalize function to 0-1
-
-def num_messages(vmax, vmin, center, width, x):
-    s = 1 / (1 + np.exp(width*(x-center)))
-    return vmin + (vmax-vmin)*s #(s-vmin)/(vmax-vmin) # normalize function to 0-1
-
-
-# In[7]:
-
-
 cscs = {}
 
 # jb laptop
@@ -137,13 +116,13 @@ cscs["oryx2"] = {
   "Thread_array": [1,2,4],
   "Sleeptime":0,
   "Launch": "pushd {job_path} && source {job_file} && popd",
-  "Run command": "mpiexec -n {total_ranks} --oversubscribe",
+  "Run command": "mpiexec -n {total_ranks} --oversubscribe timeout {timeout} ",
   "Batch preamble": """
 #!/bin/bash -l
 
 # Env
-export OMP_NUM_THREADS={threads}
-export GOMP_CPU_AFFINITY=0-{threadsm1}
+#export OMP_NUM_THREADS={threads}
+#export GOMP_CPU_AFFINITY=0-{threadsm1}
 
 # Commands
 """
@@ -158,7 +137,7 @@ cscs["daint"] = {
   "Thread_array": [1,2,4,8,16],
   "Sleeptime":0.25,
   "Launch": "sbatch --chdir={job_path} {job_file}",
-  "Run command": "srun --unbuffered --ntasks {total_ranks} --cpus-per-task {threads_per_rank}",
+  "Run command": "srun --cpu-bind=cores --unbuffered --ntasks {total_ranks} --cpus-per-task {threads_per_rank} timeout {timeout} ",
   "Batch preamble": """
 #!/bin/bash -l
 #SBATCH --job-name={run_name}_{transport}_{nodes}_{threads}_{inflight}_{size}
@@ -170,11 +149,16 @@ cscs["daint"] = {
 #SBATCH --output=output.txt
 #SBATCH --error=error.txt
 
-# Env
-export MPICH_MAX_THREAD_SAFETY=multiple
-export OMP_NUM_THREADS={threads}
-export MKL_NUM_THREADS={threads}
-export GOMP_CPU_AFFINITY=0-{threadsm1}
+module swap craype/2.7.10 craype/2.7.15
+
+# alternatives : srun --cpu-bind v,mask_cpu:0xffff
+# export GOMP_CPU_AFFINITY=0-{threadsm1}
+
+# Old Env vars that might be useful
+# export MPICH_MAX_THREAD_SAFETY=multiple
+# export OMP_NUM_THREADS={threads}
+# export MKL_NUM_THREADS={threads}
+# export MPICH_GNI_NDREG_ENTRIES=1024
 
 # Debug
 module list &> modules.txt
@@ -190,13 +174,7 @@ cscs['eiger']['Cores'] = 64
 cscs['eiger']['Thread_array'] = [1,2,4,8,16]
 
 
-# In[8]:
-
-
-print(cscs['eiger'])
-
-
-# In[9]:
+# In[7]:
 
 
 #
@@ -220,8 +198,8 @@ def make_job_directory(fdir,name, transport, nodes, threads, inflight, size):
 #
 # create the launch command-line
 #
-def run_command(system, total_ranks, cpus_per_rank):
-    return system["Run command"].format(total_ranks=total_ranks, cpus_per_rank=cpus_per_rank, threads_per_rank=cpus_per_rank)
+def run_command(system, total_ranks, cpus_per_rank, timeout):
+    return system["Run command"].format(total_ranks=total_ranks, cpus_per_rank=cpus_per_rank, threads_per_rank=cpus_per_rank, timeout=timeout)
 
 #
 # create dir + write final script for sbatch/shell or other job launcher
@@ -240,6 +218,9 @@ def write_job_file(system, launch_file, job_dir, job_text, suffix=''):
     launchstring += 'sleep ' + str(system['Sleeptime']) + '\n'
     launch_file.write(launchstring)
 
+#
+# generate a string that decorates and launches a single instance of the test
+#
 def execution_string(env, launch_cmd, prog_cmd, output_redirect):
     full_command = f"{env} {launch_cmd} {prog_cmd}".strip()
     command_prologue  = f'printf "\\n'
@@ -251,57 +232,70 @@ def execution_string(env, launch_cmd, prog_cmd, output_redirect):
     return '\n' + command_prologue + '\n' + full_command + ' >> ' + output_redirect + '\n' + command_epilogue + '\n'
 
 #
-# application specific commmands/flags/options that go into the job script
+# generate application specific commmands/flags/options that go into the job script
 #
-def oomph(system, bin_dir, timeout, transport, progs, nodes, threads, msg, size, inflight, extra_flags="", env=""):
+def oomph_original(system, bin_dir, timeout, transport, progs, nodes, threads, msg, size, inflight, env):
     total_ranks = 2
     whole_cmd = ''
+    suffix = ''
 
     # transport layers use '_libfabric', '_ucx', '_mpi', etc
-    suffix = f'_{transport}'
+    if args.type!='native':
+        suffix = f'_{transport}'
+
+    # timed version uses seconds instead of messages/iterations
+    if args.type=='timed':
+        msg = 30
+
+    # always remember to add a space to the end of each env var for concatenation of many of them
+    if threads==1:
+        env +=  'MPICH_MAX_THREAD_SAFETY=single '
+    else:
+        env +=  'MPICH_MAX_THREAD_SAFETY=multiple '
+        env += f'OMP_NUM_THREADS={threads} '
+        # env += f'GOMP_CPU_AFFINITY=0-{threads} '
+
     for prog in progs:
         if threads>1:
-            prog = prog + '_mt'
+            if args.type=='normal' or args.type=='timed':
+                prog = prog + '_mt'
+
+        if transport=='native' and threads==1:
+            prog = prog.replace('_mt_','_')
+
         # generate the name of the output file we redirect output to
-        outfile = f'{prog}_{msg}_{size}_{inflight}.out'
+        outfile = f'{prog}_N{nodes}_T{threads}_I{msg}_S{size}_F{inflight}.out'
 
         # generate the program commmand with all command line params needed by program
-        # this test has a different command line from others - not used on OOMPH yet
-        if prog=='bench_p2p_pp_ft_avail':
-            # test will run for 30s
-            prog_cmd = f"{bin_dir}/{prog}{suffix} 30 {size} {inflight}"
-        else:
-            prog_cmd = f"{bin_dir}/{prog}{suffix} {msg} {size} {inflight}"
+        prog_cmd = f"{bin_dir}/{prog}{suffix} {msg} {size} {inflight}"
 
         # get the system launch command (mpiexec, srun, etc) with options/params
-        launch_cmd = run_command(system, total_ranks, threads)
+        launch_cmd = run_command(system, total_ranks, threads, timeout)
 
-        # basic version of benchmark
-        # generate a string that decorates and launches a singe instance of the test
-        whole_cmd += execution_string(env, launch_cmd, prog_cmd, outfile)
-
-        # for libfabric, run benchmark again with extra environment options to control execution
         if transport=='libfabric':
-            #whole_cmd += execution_string(env + 'LIBFABRIC_AUTO_PROGRESS=1', launch_cmd, prog_cmd, outfile)
-            whole_cmd += execution_string(env + 'LIBFABRIC_ENDPOINT_TYPE=multiple', launch_cmd, prog_cmd, outfile)
-            whole_cmd += execution_string(env + 'LIBFABRIC_ENDPOINT_TYPE=scalable', launch_cmd, prog_cmd, outfile)
-            whole_cmd += execution_string(env + 'LIBFABRIC_ENDPOINT_TYPE=threadlocal', launch_cmd, prog_cmd, outfile)
+            env2 = env + 'LIBFABRIC_POLL_SIZE=32 '
+            #for ep in ['single', 'multiple', 'scalable', 'threadlocal']:
+            for ep in ['threadlocal']:
+                whole_cmd += execution_string(env2 + f"LIBFABRIC_ENDPOINT_TYPE={ep} ", launch_cmd, prog_cmd, outfile)
+                # auto progress?
+                #whole_cmd += execution_string(env + f"LIBFABRIC_ENDPOINT_TYPE={ep} " + f"LIBFABRIC_AUTO_PROGRESS=1 ", launch_cmd, prog_cmd, outfile)
+        else:
+            whole_cmd += execution_string(env, launch_cmd, prog_cmd, outfile)
 
     return whole_cmd
 
 
-# In[10]:
+# In[8]:
 
 
 system = cscs[hostname]
 #
 job_name       = 'oomph'
-timeout        = 400        # seconds per benchmark
-time_min       = timeout*6 # total time estimate
+timeout        = args.timeout
+time_min       = 2000*60 # total time estimate
 timestr        = time.strftime('%H:%M:%S', time.gmtime(time_min))
 ranks_per_node = 1
 nodes_arr = [2]
-trans_arr = ['libfabric', 'mpi']
 thrd_arr  = system['Thread_array']
 size_arr  = [1,10,100,1000,10000,100000,1000000]
 nmsg_lut  = {1:500000,
@@ -317,15 +311,31 @@ nmsg_lut  = {1:500000,
              1000000:50000,
              2000000:25000}
 
-#for i in size_arr:
-#    print(int(num_messages(1E6, 25E3, 1E5, 1E-5, i)))
+flight_arr = [1,10,100]
 
-flight_arr= [1,4,16,64]
-prog_arr  = ["bench_p2p_bi_cb_avail", "bench_p2p_bi_cb_wait", "bench_p2p_bi_ft_avail", "bench_p2p_bi_ft_wait"]
-#prog_arr  = ["bench_p2p_pp_ft_avail", "bench_p2p_bi_ft_avail"]
+if args.type=='normal':
+    trans_arr = ['libfabric', 'mpi']
+    prog_arr  = [
+        #"bench_p2p_bi_cb_avail",
+        #"bench_p2p_bi_cb_wait",
+        "bench_p2p_bi_ft_avail",
+        #"bench_p2p_bi_ft_wait"
+    ]
+
+if args.type=='timed':
+    trans_arr = ['libfabric', 'mpi']
+    prog_arr  = ['bench_p2p_pp_ft_avail']
+
+if args.type=='native':
+    trans_arr = ['native']
+    prog_arr  = [
+        #"mpi_p2p_bi_avail_mt_test", "mpi_p2p_bi_avail_mt_testany",
+        #"mpi_p2p_bi_wait_mt_wait",
+        "mpi_p2p_bi_wait_mt_waitall"
+    ]
 
 
-# In[11]:
+# In[9]:
 
 
 combos = 0
@@ -338,24 +348,28 @@ else:
     #
     job_launch_file.write("#!/bin/bash -l\n")
 
-# generate all combinations in one monster loop
-for nodes, transport, threads, size, inflight in product(
-    nodes_arr, trans_arr, thrd_arr, size_arr, flight_arr):
+# create the output directory for each job
+job_dir = make_job_directory(run_dir, 'oomph', "all", 2, 1, 1, 1)
 
-    extra_flags = ""
-    suffix = ""
-    # number of messages (niter)
-    msg = int(num_messages(1E6, 25E3, 1E5, 1E-5, size))
+# first part of boiler plate job script
+job_text = init_job_text(system, job_name, timestr, "all", 2, 16, 1, 1)
+
+# generate all combinations in one monster loop
+for nodes, transport, threads, size, inflight in product(nodes_arr, trans_arr, thrd_arr, size_arr, flight_arr):
+
+    env = ""
     msg = nmsg_lut[size]
 
     # create the output directory for each job
-    job_dir = make_job_directory(run_dir, 'oomph', transport, nodes, threads, inflight, size)
+    #job_dir = make_job_directory(run_dir, 'oomph', transport, nodes, threads, inflight, size)
 
     # first part of boiler plate job script
-    job_text = init_job_text(system, job_name, timestr, transport, nodes, threads, inflight, size)
+    #job_text = init_job_text(system, job_name, timestr, transport, nodes, threads, inflight, size)
+
+    env = 'MPICH_GNI_NDREG_ENTRIES=1024 '
 
     # application specific part of job script
-    job_text += oomph(
+    job_text += oomph_original(
         system,
         binary_dir,
         timeout,
@@ -366,8 +380,7 @@ for nodes, transport, threads, size, inflight in product(
         msg,
         size,
         inflight,
-        suffix,
-        extra_flags,
+        env
     )
     # debugging
     # print(job_dir, '\n', job_text, '\n\n\n\n')
@@ -376,10 +389,11 @@ for nodes, transport, threads, size, inflight in product(
 
     if combos==1:
         print('Uncommment the following line to perform the job creation')
-    write_job_file(system, job_launch_file, job_dir, job_text)
+
+write_job_file(system, job_launch_file, job_dir, job_text)
 
 make_executable(job_launch)
-print(combos)
+print('Combinations', combos, 'est-time', combos*4*2,'minutes')
 
 
 # In[ ]:
