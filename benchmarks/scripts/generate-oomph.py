@@ -10,7 +10,6 @@ import numpy as np
 import inspect
 import os
 import time
-import subprocess
 from IPython.display import Image, display, HTML
 import importlib
 import socket
@@ -19,19 +18,9 @@ import argparse
 # working dir
 cwd = os.getcwd()
 
-# hostname + cleanup login node 'daint101' etc
-hostname = socket.gethostname()
-if hostname.startswith('daint'):
-    hostname = 'daint'
-if hostname.startswith('uan'):
-    hostname = 'eiger'
-
 # name of this script
 scriptname = inspect.getframeinfo(inspect.currentframe()).filename
 scriptpath = os.path.dirname(os.path.abspath(scriptname))
-
-# summary
-print(f'CWD        : {cwd} \nScriptpath : {scriptpath} \nHostname   : {hostname}')
 
 
 # In[2]:
@@ -66,7 +55,8 @@ def get_command_line_args(notebook_args=None):
     parser = argparse.ArgumentParser(description='Generator for oomph benchmarks')
     parser.add_argument('-d', '--dir', default=cwd, action='store', help='base directory to generate job scripts in')
     parser.add_argument('-t', '--type', default='normal', action='store', help='normal, timed or native for different test types')
-    parser.add_argument('-m', '--timeout', default=120, action='store', help='executable timeout period')
+    parser.add_argument('-T', '--timeout', default=120, action='store', help='executable timeout period')
+    parser.add_argument('-m', '--machine', default='', action='store', help='select machine batch job config/preamble')
     if is_notebook():
         parser.add_argument('-f', help='seems to be defaulted by jupyter')
         return parser.parse_args(notebook_args)
@@ -82,13 +72,30 @@ else:
 # In[4]:
 
 
+# hostname + cleanup login node 'daint101' etc
+if args.machine != '':
+    hostname = args.machine
+elif os.environ.get('LUMI_STACK_NAME', 'oryx2') == 'LUMI':
+    hostname = 'lumi'
+elif socket.gethostname().startswith('daint'):
+    hostname = 'daint'
+else :
+    hostname = 'oryx2'
+
+# summary
+print(f'CWD        : {cwd} \nScriptpath : {scriptpath} \nHostname   : {hostname}')
+
+
+# In[5]:
+
+
 def make_executable(path):
     mode = os.stat(path).st_mode
     mode |= (mode & 0o444) >> 2    # copy R bits to X
     os.chmod(path, mode)
 
 
-# In[5]:
+# In[6]:
 
 
 # strings with @xxx@ will be substituted by cmake
@@ -102,7 +109,7 @@ else:
 print(f'Generating scripts in {run_dir}')
 
 
-# In[6]:
+# In[7]:
 
 
 cscs = {}
@@ -168,13 +175,55 @@ printenv > env.txt
 """
 }
 
+# daint mc nodes config
+cscs["lumi"] = {
+  "Machine":"lumi",
+  "Cores": 16,
+  "Threads per core": 2,
+  "Allowed rpns": [1],
+  "Thread_array": [1,2,4,8,16],
+  "Sleeptime":0.25,
+  "Launch": "sbatch --chdir={job_path} {job_file}",
+  "Run command": "srun --cpu-bind=cores --unbuffered --ntasks {total_ranks} --cpus-per-task {threads_per_rank} timeout {timeout} ",
+  "Batch preamble": """
+#!/bin/bash -l
+#SBATCH --job-name={run_name}_{transport}_{nodes}_{threads}_{inflight}_{size}
+#SBATCH --time={time_min}
+#SBATCH --nodes={nodes}
+#SBATCH --partition=standard
+#SBATCH --account=project_465000105
+#SBATCH --output=output.txt
+#SBATCH --error=error.txt
+
+module load LUMI/22.06
+module load cpeGNU
+module load buildtools
+module load Boost
+
+# alternatives : srun --cpu-bind v,mask_cpu:0xffff
+# export GOMP_CPU_AFFINITY=0-{threadsm1}
+
+export MPICH_MAX_THREAD_SAFETY=multiple
+# export OMP_NUM_THREADS={threads}
+# export MKL_NUM_THREADS={threads}
+# export MPICH_GNI_NDREG_ENTRIES=1024
+
+# Debug
+module list &> modules.txt
+printenv > env.txt
+
+# Commands
+"""
+}
+
+
 cscs['eiger'] = cscs['daint']
 cscs['eiger']['Machine'] = 'eiger'
 cscs['eiger']['Cores'] = 64
 cscs['eiger']['Thread_array'] = [1,2,4,8,16]
 
 
-# In[7]:
+# In[8]:
 
 
 #
@@ -253,7 +302,7 @@ def oomph_original(system, bin_dir, timeout, transport, progs, nodes, threads, m
     else:
         env +=  'MPICH_MAX_THREAD_SAFETY=multiple '
         env += f'OMP_NUM_THREADS={threads} '
-        # env += f'GOMP_CPU_AFFINITY=0-{threads} '
+        env += f'GOMP_CPU_AFFINITY=0-{threads} '
 
     for prog in progs:
         if threads>1:
@@ -274,18 +323,18 @@ def oomph_original(system, bin_dir, timeout, transport, progs, nodes, threads, m
 
         if transport=='libfabric':
             env2 = env + 'LIBFABRIC_POLL_SIZE=32 '
-            #for ep in ['single', 'multiple', 'scalable', 'threadlocal']:
+            #for ep in ['single', 'multiple', 'scalableTx', 'threadlocal']:
             for ep in ['threadlocal']:
                 whole_cmd += execution_string(env2 + f"LIBFABRIC_ENDPOINT_TYPE={ep} ", launch_cmd, prog_cmd, outfile)
-                # auto progress?
-                #whole_cmd += execution_string(env + f"LIBFABRIC_ENDPOINT_TYPE={ep} " + f"LIBFABRIC_AUTO_PROGRESS=1 ", launch_cmd, prog_cmd, outfile)
+            if False: # add option to enable this?
+                whole_cmd += execution_string(env2 + f"LIBFABRIC_ENDPOINT_TYPE={ep} " + f"LIBFABRIC_AUTO_PROGRESS=1 ", launch_cmd, prog_cmd, outfile)
         else:
             whole_cmd += execution_string(env, launch_cmd, prog_cmd, outfile)
 
     return whole_cmd
 
 
-# In[8]:
+# In[9]:
 
 
 system = cscs[hostname]
@@ -297,13 +346,15 @@ timestr        = time.strftime('%H:%M:%S', time.gmtime(time_min))
 ranks_per_node = 1
 nodes_arr = [2]
 thrd_arr  = system['Thread_array']
-size_arr  = [1,10,100,1000,10000,100000,1000000]
+size_arr  = [1,10,100,1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000]
 nmsg_lut  = {1:500000,
              10:500000,
              100:500000,
              1000:500000,
+             2000:500000,
              5000:250000,
              10000:250000,
+             20000:250000,
              50000:250000,
              100000:250000,
              200000:250000,
@@ -311,7 +362,7 @@ nmsg_lut  = {1:500000,
              1000000:50000,
              2000000:25000}
 
-flight_arr = [1,10,100]
+flight_arr = [1,10,50,100]
 
 if args.type=='normal':
     trans_arr = ['libfabric', 'mpi']
@@ -335,7 +386,7 @@ if args.type=='native':
     ]
 
 
-# In[9]:
+# In[10]:
 
 
 combos = 0
