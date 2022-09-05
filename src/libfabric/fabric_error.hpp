@@ -15,17 +15,15 @@
 //
 #include <rdma/fi_errno.h>
 //
-#include "./print.hpp"
+#include "oomph_libfabric_defines.hpp"
 
-namespace oomph
+namespace NS_DEBUG
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<true> err_deb("ERROR__");
-} // namespace oomph
+static NS_DEBUG::enable_print<false> err_deb("ERROR__");
+} // namespace NS_DEBUG
 
-namespace oomph
-{
-namespace libfabric
+namespace NS_LIBFABRIC
 {
 
 class fabric_error : public std::runtime_error
@@ -36,7 +34,7 @@ class fabric_error : public std::runtime_error
     : std::runtime_error(std::string(fi_strerror(-err)) + msg)
     , error_(err)
     {
-        err_deb.error(msg, ":", fi_strerror(-err));
+        NS_DEBUG::err_deb.error(msg, ":", fi_strerror(-err));
         std::terminate();
     }
 
@@ -44,12 +42,11 @@ class fabric_error : public std::runtime_error
     : std::runtime_error(fi_strerror(-err))
     , error_(-err)
     {
-        err_deb.error(what());
+        NS_DEBUG::err_deb.error(what());
         std::terminate();
     }
 
     int error_;
 };
 
-} // namespace libfabric
-} // namespace oomph
+} // namespace NS_LIBFABRIC

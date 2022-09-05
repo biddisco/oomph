@@ -13,12 +13,9 @@
 //
 #include <oomph/request.hpp>
 //
-#include <print.hpp>
-#include <operation_context_base.hpp>
+#include "operation_context_base.hpp"
 //
-namespace oomph
-{
-namespace libfabric
+namespace oomph::libfabric
 {
 
 // cppcheck-suppress ConfigurationNotChecked
@@ -53,5 +50,4 @@ struct operation_context : public operation_context_base<operation_context>
     int handle_tagged_send_completion_impl(void* user_data);
 };
 
-} // namespace libfabric
-} // namespace oomph
+} // namespace oomph::libfabric

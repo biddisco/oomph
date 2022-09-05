@@ -24,7 +24,7 @@ struct request_state
 {
     using base = request_state_base<false>;
     using shared_ptr_t = util::unsafe_shared_ptr<request_state>;
-    using operation_context = oomph::libfabric::operation_context;
+    using operation_context = libfabric::operation_context;
 
     operation_context                      m_operation_context;
     util::unsafe_shared_ptr<request_state> m_self_ptr;
@@ -34,12 +34,12 @@ struct request_state
     : base{ctxt, comm, scheduled, rank, tag, std::move(cb)}
     , m_operation_context{this}
     {
-        [[maybe_unused]] auto scp = oomph::libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     ~request_state()
     {
-        [[maybe_unused]] auto scp = oomph::libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     void progress();
@@ -67,7 +67,7 @@ struct shared_request_state
 {
     using base = request_state_base<true>;
     using shared_ptr_t = std::shared_ptr<shared_request_state>;
-    using operation_context = oomph::libfabric::operation_context;
+    using operation_context = libfabric::operation_context;
 
     operation_context                     m_operation_context;
     std::shared_ptr<shared_request_state> m_self_ptr;
@@ -77,12 +77,12 @@ struct shared_request_state
     : base{ctxt, comm, scheduled, rank, tag, std::move(cb)}
     , m_operation_context{this}
     {
-        [[maybe_unused]] auto scp = oomph::libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     ~shared_request_state()
     {
-        [[maybe_unused]] auto scp = oomph::libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = libfabric::ctx_deb.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     void progress();

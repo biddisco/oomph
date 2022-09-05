@@ -9,7 +9,7 @@
  */
 #pragma once
 
-#include "libfabric_defines.hpp"
+#include "oomph_libfabric_defines.hpp"
 //
 #include <atomic>
 #include <type_traits>

@@ -35,17 +35,14 @@
 #include <rdma/fi_rma.h>
 #include <rdma/fi_tagged.h>
 //
+#include "oomph_libfabric_defines.hpp"
 #include "fabric_error.hpp"
 #include "locality.hpp"
 #include "memory_region.hpp"
 #include "operation_context.hpp"
-#include "simple_counter.hpp"
-#include "print.hpp"
 #include "controller_base.hpp"
 //
 #include <oomph/util/unique_function.hpp>
-//
-#include "libfabric_defines.hpp"
 //
 #include <mpi.h>
 
@@ -102,14 +99,14 @@ class controller : public controller_base<controller>
         //
         if (rank > 0)
         {
-            DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("sending here"), iplocality(here_), "size",
-                                         locality_defs::array_size));
+            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending here"), iplocality(here_), "size",
+                                          locality_defs::array_size));
             /*int err = */ MPI_Send(here_.fabric_data(), locality_defs::array_size, MPI_CHAR,
                 0, // dst rank
                 0, // tag
                 comm);
 
-            DEBUG(NS_DEBUG::cnt_deb,
+            LF_DEB(NS_DEBUG::cnt_deb,
                 debug(debug::str<>("receiving all"), "size", locality_defs::array_size));
 
             MPI_Status status;
@@ -117,28 +114,29 @@ class controller : public controller_base<controller>
                 0, // src rank
                 0, // tag
                 comm, &status);
-            DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("received addresses")));
+            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("received addresses")));
         }
         else
         {
-            DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("receiving addresses")));
+            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("receiving addresses")));
             memcpy(&localities[0], here_.fabric_data(), locality_defs::array_size);
             for (int i = 1; i < size; ++i)
             {
-                DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("receiving address"), debug::dec<>(i)));
+                LF_DEB(NS_DEBUG::cnt_deb,
+                    debug(debug::str<>("receiving address"), debug::dec<>(i)));
                 MPI_Status status;
                 /*int err = */ MPI_Recv(&localities[i * locality_defs::array_size],
                     size * locality_defs::array_size, MPI_CHAR,
                     i, // src rank
                     0, // tag
                     comm, &status);
-                DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("received address"), debug::dec<>(i)));
+                LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("received address"), debug::dec<>(i)));
             }
 
-            DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("sending all")));
+            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending all")));
             for (int i = 1; i < size; ++i)
             {
-                DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("sending to"), debug::dec<>(i)));
+                LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending to"), debug::dec<>(i)));
                 /*int err = */ MPI_Send(&localities[0], size * locality_defs::array_size, MPI_CHAR,
                     i, // dst rank
                     0, // tag
@@ -147,7 +145,7 @@ class controller : public controller_base<controller>
         }
 
         // all ranks should now have a full localities vector
-        DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("populating vector")));
+        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("populating vector")));
         for (int i = 0; i < size; ++i)
         {
             locality temp;
@@ -168,11 +166,11 @@ class controller : public controller_base<controller>
         MPI_Comm_rank(mpi_comm, &rank);
         MPI_Comm_size(mpi_comm, &size);
 
-        DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("initialize_localities"), size, "localities"));
+        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("initialize_localities"), size, "localities"));
 
         MPI_exchange_localities(av, mpi_comm, rank, size);
         debug_print_av_vector(size);
-        DEBUG(NS_DEBUG::cnt_deb, debug(debug::str<>("Done localities")));
+        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("Done localities")));
     }
 
     // --------------------------------------------------------------------
@@ -249,7 +247,7 @@ class controller : public controller_base<controller>
             if (!bypass_tx_lock() && !lock.owns_lock()) { return -1; }
 
             static auto polling = NS_DEBUG::cnt_deb.make_timer(1, debug::str<>("poll send queue"));
-            DEBUG(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(send_cq)));
+            LF_DEB(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(send_cq)));
 
             // poll for completions
             {
@@ -293,14 +291,14 @@ class controller : public controller_base<controller>
             for (int i = 0; i < ret; ++i)
             {
                 ++sends_complete;
-                DEBUG(NS_DEBUG::cnt_deb,
+                LF_DEB(NS_DEBUG::cnt_deb,
                     debug(debug::str<>("Completion"), i, debug::dec<2>(i), "txcq flags",
                         fi_tostr(&entry[i].flags, FI_TYPE_CQ_EVENT_FLAGS), "(",
                         debug::dec<>(entry[i].flags), ")", "context",
                         NS_DEBUG::ptr(entry[i].op_context), "length", debug::hex<6>(entry[i].len)));
                 if ((entry[i].flags & (FI_TAGGED | FI_SEND | FI_MSG)) != 0)
                 {
-                    DEBUG(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb,
                         debug(debug::str<>("Completion"), "txcq tagged send completion",
                             NS_DEBUG::ptr(entry[i].op_context)));
 
@@ -346,7 +344,7 @@ class controller : public controller_base<controller>
             if (!bypass_rx_lock() && !lock.owns_lock()) { return -1; }
 
             static auto polling = NS_DEBUG::cnt_deb.make_timer(1, debug::str<>("poll recv queue"));
-            DEBUG(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(rx_cq)));
+            LF_DEB(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(rx_cq)));
 
             // poll for completions
             {
@@ -362,7 +360,7 @@ class controller : public controller_base<controller>
                 // from the manpage 'man 3 fi_cq_readerr'
                 if (e.err == FI_ECANCELED)
                 {
-                    DEBUG(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb,
                         debug(debug::str<>("rxcq Cancelled"), "flags", debug::hex<6>(e.flags),
                             "len", debug::hex<6>(e.len), "context", NS_DEBUG::ptr(e.op_context)));
                     // the request was cancelled, we can simply exit
@@ -392,14 +390,14 @@ class controller : public controller_base<controller>
             for (int i = 0; i < ret; ++i)
             {
                 ++recvs_complete;
-                DEBUG(NS_DEBUG::cnt_deb,
+                LF_DEB(NS_DEBUG::cnt_deb,
                     debug(debug::str<>("Completion"), i, "rxcq flags",
                         fi_tostr(&entry[i].flags, FI_TYPE_CQ_EVENT_FLAGS), "(",
                         debug::dec<>(entry[i].flags), ")", "context",
                         NS_DEBUG::ptr(entry[i].op_context), "length", debug::hex<6>(entry[i].len)));
                 if ((entry[i].flags & (FI_TAGGED | FI_RECV)) != 0)
                 {
-                    DEBUG(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb,
                         debug(debug::str<>("Completion"), "rxcq tagged recv completion",
                             NS_DEBUG::ptr(entry[i].op_context)));
 
@@ -430,7 +428,7 @@ class controller : public controller_base<controller>
         (void)info; // unused variable warning
         (void)tx;   // unused variable warning
 
-        DEBUG(NS_DEBUG::cnb_deb, debug(debug::str<>("fi_dupinfo")));
+        LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("fi_dupinfo")));
         struct fi_info* hints = fi_dupinfo(info);
         if (!hints) throw NS_LIBFABRIC::fabric_error(0, "fi_dupinfo");
         // clear any Rx address data that might be set

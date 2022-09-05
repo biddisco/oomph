@@ -72,18 +72,9 @@ extern char** environ;
 // The output will only be produced every N seconds
 // ------------------------------------------------------------
 
-// Used to wrap function call parameters to prevent evaluation
-// when debugging is disabled
-#define OOMPH_DP_LAZY(printer, Expr) printer.eval([&] { return Expr; })
-#if (__cplusplus >= 201703L)
-#define OOMPH_DP_ONLY(printer, Expr)                                                               \
-    if constexpr (printer.is_enabled()) { printer.Expr; };
-#else
-#define OOMPH_DP_ONLY(printer, Expr)                                                               \
-    if (printer.is_enabled()) { printer.Expr; };
-#endif
-
 #define NS_DEBUG oomph::debug
+#define LF_DEB(printer, Expr)                                                                      \
+    if constexpr (printer.is_enabled()) { printer.Expr; };
 
 // ------------------------------------------------------------
 /// \cond NODETAIL
@@ -721,5 +712,5 @@ struct enable_print<true>
     }
 };
 
-} // namespace oomph::debug
+} // namespace NS_DEBUG
 /// \endcond

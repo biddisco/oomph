@@ -20,7 +20,7 @@
 // paths relative to backend
 #include <../communicator_base.hpp>
 #include <../device_guard.hpp>
-#include <./operation_context.hpp>
+#include <operation_context.hpp>
 #include <request_state.hpp>
 #include <controller.hpp>
 #include <context.hpp>
@@ -28,7 +28,7 @@
 namespace oomph
 {
 
-using operation_context = oomph::libfabric::operation_context;
+using operation_context = libfabric::operation_context;
 
 using tag_disp = NS_DEBUG::detail::hex<12, uintptr_t>;
 
@@ -63,7 +63,7 @@ class communicator_impl : public communicator_base<communicator_impl>
     , m_recv_cb_queue(128)
     , m_recv_cb_cancel(8)
     {
-        OOMPH_DP_ONLY(com_deb, debug(NS_DEBUG::str<>("MPI_comm"), NS_DEBUG::ptr(mpi_comm())));
+        LF_DEB(com_deb, debug(NS_DEBUG::str<>("MPI_comm"), NS_DEBUG::ptr(mpi_comm())));
         m_tx_endpoint = m_context->get_controller()->get_tx_endpoint();
         m_rx_endpoint = m_context->get_controller()->get_rx_endpoint();
     }
@@ -105,7 +105,7 @@ class communicator_impl : public communicator_base<communicator_impl>
                 com_err.error("No destination endpoint, terminating.");
                 std::terminate();
             }
-            else if (ret) { throw libfabric::fabric_error(int(ret), msg); }
+            else if (ret) { throw NS_LIBFABRIC::fabric_error(int(ret), msg); }
         }
     }
 
@@ -116,7 +116,7 @@ class communicator_impl : public communicator_base<communicator_impl>
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
         // clang-format off
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("send message buffer"),
                   "->", NS_DEBUG::dec<2>(dst_addr_),
                   send_region,
@@ -135,12 +135,9 @@ class communicator_impl : public communicator_base<communicator_impl>
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
         // clang-format on
-        OOMPH_DP_ONLY(com_deb,
-            debug(NS_DEBUG::str<>("inject tagged"),
-                  "->", NS_DEBUG::dec<2>(dst_addr_),
-                  send_region,
-                  "tag", tag_disp(tag_),
-                  "tx endpoint", NS_DEBUG::ptr(m_tx_endpoint.get_ep())));
+        LF_DEB(com_deb,
+            debug(NS_DEBUG::str<>("inject tagged"), "->", NS_DEBUG::dec<2>(dst_addr_), send_region,
+                "tag", tag_disp(tag_), "tx endpoint", NS_DEBUG::ptr(m_tx_endpoint.get_ep())));
         // clang-format off
         execute_fi_function(fi_tinject, "fi_tinject", m_tx_endpoint.get_ep(),
             send_region.get_address(), size, dst_addr_, tag_);
@@ -155,7 +152,7 @@ class communicator_impl : public communicator_base<communicator_impl>
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
         // clang-format off
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("recv message buffer"),
                   "<-", NS_DEBUG::dec<2>(src_addr_),
                   recv_region,
@@ -181,9 +178,8 @@ class communicator_impl : public communicator_base<communicator_impl>
 #ifdef EXTRA_SIZE_CHECKS
         if (size != reg.get_size())
         {
-            OOMPH_DP_ONLY(com_err,
-                error(NS_DEBUG::str<>("send mismatch"), "size", NS_DEBUG::hex<6>(size), "reg size",
-                    NS_DEBUG::hex<6>(reg.get_size())));
+            LF_DEB(com_err, error(NS_DEBUG::str<>("send mismatch"), "size", NS_DEBUG::hex<6>(size),
+                                "reg size", NS_DEBUG::hex<6>(reg.get_size())));
         }
 #endif
         m_context->get_controller()->sends_posted_++;
@@ -215,7 +211,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         s->create_self_ref();
 
         // clang-format off
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("Send"),
                   "thisrank", NS_DEBUG::dec<>(rank()),
                   "rank", NS_DEBUG::dec<>(dst),
@@ -244,9 +240,8 @@ class communicator_impl : public communicator_base<communicator_impl>
 #ifdef EXTRA_SIZE_CHECKS
         if (size != reg.get_size())
         {
-            OOMPH_DP_ONLY(com_err,
-                error(NS_DEBUG::str<>("recv mismatch"), "size", NS_DEBUG::hex<6>(size), "reg size",
-                    NS_DEBUG::hex<6>(reg.get_size())));
+            LF_DEB(com_err, error(NS_DEBUG::str<>("recv mismatch"), "size", NS_DEBUG::hex<6>(size),
+                                "reg size", NS_DEBUG::hex<6>(reg.get_size())));
         }
 #endif
         m_context->get_controller()->recvs_posted_++;
@@ -257,7 +252,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         s->create_self_ref();
 
         // clang-format off
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("Recv"),
                   "thisrank", NS_DEBUG::dec<>(rank()),
                   "rank", NS_DEBUG::dec<>(src),
@@ -287,9 +282,8 @@ class communicator_impl : public communicator_base<communicator_impl>
 #ifdef EXTRA_SIZE_CHECKS
         if (size != reg.get_size())
         {
-            OOMPH_DP_ONLY(com_err,
-                error(NS_DEBUG::str<>("recv mismatch"), "size", NS_DEBUG::hex<6>(size), "reg size",
-                    NS_DEBUG::hex<6>(reg.get_size())));
+            LF_DEB(com_err, error(NS_DEBUG::str<>("recv mismatch"), "size", NS_DEBUG::hex<6>(size),
+                                "reg size", NS_DEBUG::hex<6>(reg.get_size())));
         }
 #endif
         m_context->get_controller()->recvs_posted_++;
@@ -300,7 +294,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         s->create_self_ref();
 
         // clang-format off
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("Recv"),
                   "thisrank", NS_DEBUG::dec<>(rank()),
                   "rank", NS_DEBUG::dec<>(src),
@@ -368,7 +362,7 @@ class communicator_impl : public communicator_base<communicator_impl>
 
         // submit the cancellation request
         bool ok = (fi_cancel(&m_rx_endpoint.get_ep()->fid, op_ctx) == 0);
-        OOMPH_DP_ONLY(com_deb,
+        LF_DEB(com_deb,
             debug(NS_DEBUG::str<>("Cancel"), "ok", ok, "op_ctx", NS_DEBUG::ptr(op_ctx)));
 
         // if the cancel operation failed completely, return
@@ -387,8 +381,8 @@ class communicator_impl : public communicator_base<communicator_impl>
                 {
                     // our recv was cancelled correctly
                     found = true;
-                    OOMPH_DP_ONLY(com_deb, debug(NS_DEBUG::str<>("Cancel"), "succeeded", "op_ctx",
-                                               NS_DEBUG::ptr(op_ctx)));
+                    LF_DEB(com_deb, debug(NS_DEBUG::str<>("Cancel"), "succeeded", "op_ctx",
+                                        NS_DEBUG::ptr(op_ctx)));
                     auto ptr = s->release_self_ref();
                     s->set_canceled();
                 }

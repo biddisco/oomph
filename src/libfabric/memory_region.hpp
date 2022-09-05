@@ -18,26 +18,10 @@
 #include <memory>
 #include <utility>
 
+#include "oomph_libfabric_defines.hpp"
 #include "fabric_error.hpp"
 
 // ------------------------------------------------------------------
-// This section exists to make interoperabily/sharing of code
-// between OOMPH/GHEX and HPX easier
-#if __has_include("./print.hpp")
-#include "print.hpp"
-#define DEBUG     OOMPH_DP_ONLY
-#define has_debug 1
-#elif __has_include(<hpx/debugging/print.hpp>)
-#include <hpx/debugging/print.hpp>
-#include <hpx/rma/rma_fwd.hpp>
-#define DEBUG(printer, Expr) HPX_DP_ONLY(printer, Expr)
-#define has_debug 1
-#else
-#define DEBUG(printer, Expr)
-#endif
-// ------------------------------------------------------------------
-
-#define NS_MEMORY oomph::libfabric
 
 namespace NS_MEMORY
 {
@@ -116,7 +100,7 @@ struct memory_handle
     , size_{uint32_t(size)}
     , used_space_{0}
     {
-        //            DEBUG(NS_MEMORY::mrn_deb,
+        //            LF_DEB(NS_MEMORY::mrn_deb,
         //                trace(NS_DEBUG::str<>("memory_handle"), *this));
     }
 
@@ -181,16 +165,16 @@ struct memory_handle
     {
         if (region_ /*&& !get_user_region()*/)
         {
-            DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("release"), region_));
+            LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("release"), region_));
             //
             if (region_provider::unregister_memory(region_))
             {
-                DEBUG(NS_MEMORY::mrn_deb, error("fi_close mr failed"));
+                LF_DEB(NS_MEMORY::mrn_deb, error("fi_close mr failed"));
                 return -1;
             }
             else
             {
-                DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("de-Registered region"), *this));
+                LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("de-Registered region"), *this));
             }
             region_ = nullptr;
         }
@@ -274,7 +258,8 @@ struct memory_segment : public memory_handle
     // we do not cache local/remote keys here because memory segments are only
     // used by the heap to store chunks and the user will always receive
     // a memory_handle - which does have keys cached
-    memory_segment(provider_domain* pd, const void* buffer, const uint64_t length, bool bind_mr, void *ep)
+    memory_segment(provider_domain* pd, const void* buffer, const uint64_t length, bool bind_mr,
+        void* ep)
     {
         // an rma key counter to keep some providers (CXI) happy
         static std::atomic<std::uint64_t> key = 0;
@@ -285,22 +270,22 @@ struct memory_segment : public memory_handle
         region_ = nullptr;
         //
         base_addr_ = memory_handle::address_;
-        DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("memory_segment"), *this));
+        LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("memory_segment"), *this));
 
         int ret = region_provider::register_memory(pd, const_cast<void*>(buffer), length,
             region_provider::flags(), 0, key++, 0, &(region_), nullptr);
-        if (ret) { throw libfabric::fabric_error(int(ret), "register_memory"); }
-        else { DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Registered region"), *this)); }
+        if (ret) { throw NS_LIBFABRIC::fabric_error(int(ret), "register_memory"); }
+        else { LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Registered region"), *this)); }
 
         if (bind_mr)
         {
             ret = fi_mr_bind(region_, (struct fid*)ep, 0);
-            if (ret) { throw libfabric::fabric_error(int(ret), "fi_mr_bind"); }
-            else { DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Bound region"), *this)); }
+            if (ret) { throw NS_LIBFABRIC::fabric_error(int(ret), "fi_mr_bind"); }
+            else { LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Bound region"), *this)); }
 
             ret = fi_mr_enable(region_);
-            if (ret) { throw libfabric::fabric_error(int(ret), "fi_mr_enable"); }
-            else { DEBUG(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Enabled region"), *this)); }
+            if (ret) { throw NS_LIBFABRIC::fabric_error(int(ret), "fi_mr_enable"); }
+            else { LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("Enabled region"), *this)); }
         }
     }
 

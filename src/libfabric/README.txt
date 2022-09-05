@@ -42,3 +42,14 @@ clang-format -i ./include/hpx/parcelport_libfabric/controller_base.hpp
 meld ./include/hpx/parcelport_libfabric/memory_region.hpp ~/src/ghex/extern/oomph/src/libfabric/memory_region.hpp
 meld ./include/hpx/parcelport_libfabric/operation_context_base.hpp ~/src/ghex/extern/oomph/src/libfabric/operation_context_base.hpp
 meld ./include/hpx/parcelport_libfabric/controller_base.hpp ~/src/ghex/extern/oomph/src/libfabric/controller_base.hpp
+
+cp ~/src/ghex/extern/oomph/src/libfabric/memory_region.hpp          ./include/hpx/parcelport_libfabric/memory_region.hpp
+cp ~/src/ghex/extern/oomph/src/libfabric/operation_context_base.hpp ./include/hpx/parcelport_libfabric/operation_context_base.hpp
+cp ~/src/ghex/extern/oomph/src/libfabric/controller_base.hpp        ./include/hpx/parcelport_libfabric/controller_base.hpp
+cp ~/src/ghex/extern/oomph/src/libfabric/fabric_error.hpp           ./include/hpx/parcelport_libfabric/fabric_error.hpp
+
+clang-format -i include/hpx/parcelport_libfabric/memory_region.hpp
+clang-format -i include/hpx/parcelport_libfabric/operation_context_base.hpp
+clang-format -i include/hpx/parcelport_libfabric/controller_base.hpp
+clang-format -i include/hpx/parcelport_libfabric/fabric_error.hpp
+

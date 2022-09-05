@@ -13,9 +13,7 @@
 #include <communicator.hpp>
 #include <context.hpp>
 
-namespace oomph
-{
-namespace libfabric
+namespace oomph::libfabric
 {
 void
 operation_context::handle_cancelled()
@@ -110,5 +108,4 @@ operation_context::handle_tagged_send_completion_impl(void* user_data)
     }
     return 1;
 }
-} // namespace libfabric
-} // namespace oomph
+} // namespace oomph::libfabric

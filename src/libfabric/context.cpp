@@ -19,7 +19,7 @@ namespace oomph
 // cppcheck-suppress ConfigurationNotChecked
 static NS_DEBUG::enable_print<false> src_deb("__SRC__");
 
-using controller_type = oomph::libfabric::controller;
+using controller_type = libfabric::controller;
 
 context_impl::context_impl(MPI_Comm comm, bool thread_safe, bool message_pool_never_free,
     std::size_t message_pool_reserve)
@@ -75,8 +75,8 @@ context_impl::init_libfabric_controller(oomph::context_impl* /*ctx*/, MPI_Comm c
     static std::shared_ptr<controller_type> instance(nullptr);
     if (!instance.get())
     {
-        OOMPH_DP_ONLY(src_deb, debug(NS_DEBUG::str<>("New Controller"), "rank", debug::dec<3>(rank),
-                                   "size", debug::dec<3>(size), "threads", debug::dec<3>(threads)));
+        LF_DEB(src_deb, debug(NS_DEBUG::str<>("New Controller"), "rank", debug::dec<3>(rank),
+                            "size", debug::dec<3>(size), "threads", debug::dec<3>(threads)));
         instance.reset(new controller_type());
         instance->initialize(HAVE_LIBFABRIC_PROVIDER, rank == 0, size, threads, comm);
     }
