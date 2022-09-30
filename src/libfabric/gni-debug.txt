@@ -14,3 +14,5 @@ mpiexec -n 2 --oversubscribe konsole -e gdb -ex run --args /home/biddisco/build/
 # Build on LUMI
 # -----------------------------------------------
 cmake -DCMAKE_BUILD_TYPE=Release -DOOMPH_WITH_LIBFABRIC=ON -DOOMPH_LIBFABRIC_PROVIDER=cxi -DLIBFABRIC_ROOT=/opt/cray/libfabric/1.15.0.0/ -DOOMPH_WITH_BENCHMARKS=ON -DOOMPH_BENCHMARKS_MT=ON -DOOMPH_WITH_TESTING=ON /users/jobiddis/src/ghex/extern/oomph/
+
+MPICH_GNI_NDREG_ENTRIES=1024 MPICH_MAX_THREAD_SAFETY=single LIBFABRIC_POLL_SIZE=32 LIBFABRIC_ENDPOINT_TYPE=scalableTx  srun --cpu-bind=cores --unbuffered --ntasks 2 --cpus-per-task 1 timeout 120  /scratch/snx3000/biddisco/build/oomph/benchmarks/bench_p2p_bi_ft_avail_libfabric 50000 1000000 10 > dump

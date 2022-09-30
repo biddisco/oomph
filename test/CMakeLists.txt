@@ -70,19 +70,19 @@ endfunction()
 
 if (OOMPH_WITH_MPI)
     foreach(t ${parallel_tests})
-        reg_parallel_test(${t} mpi 4)
+        reg_parallel_test(${t} mpi 2)
     endforeach()
 endif()
 
 if (OOMPH_WITH_UCX)
     foreach(t ${parallel_tests})
-        reg_parallel_test(${t} ucx 4)
+        reg_parallel_test(${t} ucx 2)
     endforeach()
 endif()
 
 if (OOMPH_WITH_LIBFABRIC)
     foreach(t ${parallel_tests})
-        reg_parallel_test(${t} libfabric 4)
+        reg_parallel_test(${t} libfabric 2)
     endforeach()
 endif()
 

@@ -63,15 +63,15 @@ class context_impl : public context_base
     context_impl(context_impl const&) = delete;
     context_impl(context_impl&&) = delete;
 
-    region_type make_region(void* const ptr, std::size_t size, bool /*device*/)
+    region_type make_region(void* const ptr, std::size_t size, int device_id)
     {
         bool bind_mr = ((m_controller->memory_registration_mode_flags() & FI_MR_ENDPOINT) != 0);
         if (bind_mr)
         {
             void* endpoint = m_controller->get_rx_endpoint().get_ep();
-            return libfabric::memory_segment(m_domain, ptr, size, bind_mr, endpoint);
+            return libfabric::memory_segment(m_domain, ptr, size, bind_mr, endpoint, device_id);
         }
-        else { return libfabric::memory_segment(m_domain, ptr, size, false, nullptr); }
+        else { return libfabric::memory_segment(m_domain, ptr, size, false, nullptr, device_id); }
     }
 
     auto& get_heap() noexcept { return m_heap; }
@@ -108,8 +108,8 @@ class context_impl : public context_base
                 {
                     // our recv was cancelled correctly
                     found = true;
-                    LF_DEB(libfabric::ctx_deb, debug(NS_DEBUG::str<>("Cancel shared"), "succeeded",
-                                                   "op_ctx", NS_DEBUG::ptr(op_ctx)));
+                    LF_DEB(oomph::ctx_deb, debug(NS_DEBUG::str<>("Cancel shared"), "succeeded",
+                                               "op_ctx", NS_DEBUG::ptr(op_ctx)));
                     auto ptr = s->release_self_ref();
                     s->set_canceled();
                 }
@@ -138,15 +138,15 @@ template<>
 inline oomph::libfabric::memory_segment
 register_memory<oomph::context_impl>(oomph::context_impl& c, void* const ptr, std::size_t size)
 {
-    return c.make_region(ptr, size, false);
+    return c.make_region(ptr, size, -2);
 }
 
 #if OOMPH_ENABLE_DEVICE
 template<>
 inline oomph::libfabric::memory_segment
-register_device_memory<context_impl>(context_impl& c, int, void* ptr, std::size_t size)
+register_device_memory<context_impl>(context_impl& c, int device_id, void* ptr, std::size_t size)
 {
-    return c.make_region(ptr, size, true);
+    return c.make_region(ptr, size, device_id);
 }
 #endif
 

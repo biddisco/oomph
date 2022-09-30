@@ -854,6 +854,9 @@ class controller_base
         bool mrhmem = (fabric_hints_->domain_attr->mr_mode & FI_MR_HMEM) != 0;
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_MR_HMEM"), mrhmem));
 
+        bool mrhalloc = (fabric_hints_->domain_attr->mr_mode & FI_MR_ALLOCATED) != 0;
+        LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_MR_ALLOCATED"), mrhalloc));
+
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Creating fi_fabric")));
         ret = fi_fabric(fabric_info_->fabric_attr, &fabric_, nullptr);
         if (ret) throw NS_LIBFABRIC::fabric_error(ret, "Failed to get fi_fabric");

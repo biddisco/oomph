@@ -76,7 +76,7 @@ class controller : public controller_base<controller>
     // --------------------------------------------------------------------
     constexpr fi_threading threadlevel_flags()
     {
-#if defined(HAVE_LIBFABRIC_GNI) || defined(HAVE_LIBFABRIC_CXI)
+#if defined(HAVE_LIBFABRIC_GNI) /*|| defined(HAVE_LIBFABRIC_CXI)*/
         return FI_THREAD_ENDPOINT;
 #else
         return FI_THREAD_SAFE;
@@ -84,7 +84,13 @@ class controller : public controller_base<controller>
     }
 
     // --------------------------------------------------------------------
-    constexpr uint64_t caps_flags() { return FI_MSG | FI_TAGGED; }
+    constexpr uint64_t caps_flags()
+    {
+#if defined(HAVE_LIBFABRIC_CXI)
+        return FI_MSG | FI_TAGGED | FI_HMEM;
+#endif
+        return FI_MSG | FI_TAGGED;
+    }
 
     // --------------------------------------------------------------------
     // we do not need to perform any special actions on init (to contact root node)

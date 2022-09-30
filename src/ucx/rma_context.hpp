@@ -62,7 +62,7 @@ template<>
 inline rma_region
 register_device_memory<rma_context>(rma_context& c, int, void* ptr, std::size_t size)
 {
-    return c.make_region(ptr, size, true);
+    return c.make_region(ptr, size);
 }
 #endif
 
