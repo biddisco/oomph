@@ -31,6 +31,10 @@
 #define HAVE_LIBFABRIC_LOCALITY_SIZE 4
 #endif
 
+#ifdef HAVE_LIBFABRIC_EFA
+#define HAVE_LIBFABRIC_LOCALITY_SIZE 32
+#endif
+
 #if defined(HAVE_LIBFABRIC_VERBS) || defined(HAVE_LIBFABRIC_TCP) ||                                \
     defined(HAVE_LIBFABRIC_SOCKETS) || defined(HAVE_LIBFABRIC_PSM2)
 #define HAVE_LIBFABRIC_LOCALITY_SIZE 16
@@ -179,6 +183,8 @@ struct locality
         return data_[0];
 #elif defined(HAVE_LIBFABRIC_CXI)
         return data_[0];
+#elif defined(HAVE_LIBFABRIC_EFA)
+        return data_[0];
 #else
         throw fabric_error(0, "unsupported fabric provider, please fix ASAP");
 #endif
@@ -191,6 +197,8 @@ struct locality
 #elif defined(HAVE_LIBFABRIC_GNI)
         return data[0];
 #elif defined(HAVE_LIBFABRIC_CXI)
+        return data[0];
+#elif defined(HAVE_LIBFABRIC_EFA)
         return data[0];
 #else
         throw fabric_error(0, "unsupported fabric provider, please fix ASAP");

@@ -566,7 +566,7 @@ class controller_base
         else if (endpoint_type_ != endpoint_type::scalableTxRx)
         {
 #if defined(HAVE_LIBFABRIC_SOCKETS) || defined(HAVE_LIBFABRIC_TCP) ||                              \
-    defined(HAVE_LIBFABRIC_VERBS) || defined(HAVE_LIBFABRIC_CXI)
+    defined(HAVE_LIBFABRIC_VERBS) || defined(HAVE_LIBFABRIC_CXI) || defined(HAVE_LIBFABRIC_EFA)
             // it appears that the rx endpoint cannot be enabled if it does not
             // have a Tx CQ (at least when using sockets), so we create a dummy
             // Tx CQ and bind it just to stop libfabric from triggering an error.
@@ -747,6 +747,11 @@ class controller_base
         return base_flags | FI_MR_ENDPOINT | FI_MR_HMEM;
 #elif defined(HAVE_LIBFABRIC_GNI)
         return FI_MR_BASIC; // FI_MR_SCALABLE one day?;
+#elif defined(HAVE_LIBFABRIC_EFA)
+        return FI_MR_LOCAL;
+        int base_flags =
+            FI_MR_VIRT_ADDR | FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_LOCAL | FI_MR_MMU_NOTIFY;
+        return base_flags | FI_MR_HMEM;
 #else
         return FI_MR_BASIC;
 #endif
@@ -770,6 +775,8 @@ class controller_base
 
 #if defined(HAVE_LIBFABRIC_SOCKETS) || defined(HAVE_LIBFABRIC_TCP) || defined(HAVE_LIBFABRIC_VERBS)
         fabric_hints_->addr_format = FI_SOCKADDR_IN;
+#elif defined(HAVE_LIBFABRIC_EFA)
+        fabric_hints_->addr_format = FI_ADDR_EFA;
 #endif
 
         fabric_hints_->caps = caps_flags();
