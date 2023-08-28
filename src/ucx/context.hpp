@@ -251,7 +251,7 @@ register_memory<context_impl>(context_impl& c, void* ptr, std::size_t)
 #if OOMPH_ENABLE_DEVICE
 template<>
 inline region
-register_device_memory<context_impl>(context_impl& c, void* ptr, std::size_t)
+register_device_memory<context_impl>(context_impl& c, int, void* ptr, std::size_t)
 {
     return c.make_region(ptr);
 }

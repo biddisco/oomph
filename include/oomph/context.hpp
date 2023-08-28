@@ -120,7 +120,7 @@ template<typename Context>
 typename Context::region_type register_memory(Context&, void*, std::size_t);
 #if OOMPH_ENABLE_DEVICE
 template<typename Context>
-typename Context::device_region_type register_device_memory(Context&, void*, std::size_t);
+typename Context::device_region_type register_device_memory(Context&, int, void*, std::size_t);
 #endif
 
 } // namespace oomph
