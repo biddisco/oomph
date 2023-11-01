@@ -93,8 +93,10 @@ if (OOMPH_WITH_LIBFABRIC)
     # Hardware device selection
     #------------------------------------------------------------------------------
     set(OOMPH_LIBFABRIC_PROVIDER "tcp" CACHE
-        STRING "The provider (cxi/gni/psm2/sockets/tcp/verbs)")
-    set_property(CACHE OOMPH_LIBFABRIC_PROVIDER PROPERTY STRINGS "cxi" "gni" "psm2" "sockets" "tcp" "verbs")
+        STRING "The provider (cxi(Cray Slingshot)/gni(Cray Gemini)/psm2(Intel Omni-Path)/sockets/tcp/verbs(Infiniband))")
+    set_property(CACHE OOMPH_LIBFABRIC_PROVIDER PROPERTY STRINGS
+        "cxi" "gni" "psm2" "tcp" "verbs")
+    # formerly also supported "sockets", but now deprecated
 
     oomph_libfabric_add_config_define_namespace(
         DEFINE HAVE_LIBFABRIC_PROVIDER
@@ -120,6 +122,8 @@ if (OOMPH_WITH_LIBFABRIC)
             DEFINE HAVE_LIBFABRIC_TCP
             NAMESPACE libfabric)
     elseif(OOMPH_LIBFABRIC_PROVIDER MATCHES "sockets")
+        message(WARNING "The Sockets provider is deprecated in favor of the tcp, udp, "
+            "and utility providers")
         oomph_libfabric_add_config_define_namespace(
             DEFINE HAVE_LIBFABRIC_SOCKETS
             NAMESPACE libfabric)
