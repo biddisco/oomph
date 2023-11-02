@@ -180,8 +180,7 @@ class controller : public controller_base<controller>
         return true;
 #elif defined(HAVE_LIBFABRIC_CXI)
         // @todo : cxi provider is not yet thread safe using scalable endpoints
-        return (threadlevel_flags() == FI_THREAD_SAFE ||
-                endpoint_type_ == endpoint_type::threadlocalTx);
+        return false;
 #else
         return (threadlevel_flags() == FI_THREAD_SAFE ||
                 endpoint_type_ == endpoint_type::threadlocalTx);
@@ -238,7 +237,8 @@ class controller : public controller_base<controller>
         send_poll_stamp = now;
 #endif
         int             ret;
-        fi_cq_msg_entry entry[256]; // max_completions_per_poll_ must be <= this
+        fi_cq_msg_entry entry[max_completions_array_limit_];
+        assert(max_completions_per_poll_ <= max_completions_array_limit_);
         {
             auto lock = try_tx_lock();
 
@@ -334,8 +334,8 @@ class controller : public controller_base<controller>
         recv_poll_stamp = now;
 #endif
         int             ret;
-        fi_cq_msg_entry entry[256]; // max_completions_per_poll_ must be <= this
-
+        fi_cq_msg_entry entry[max_completions_array_limit_];
+        assert(max_completions_per_poll_ <= max_completions_array_limit_);
         {
             auto lock = get_rx_lock();
 
@@ -432,10 +432,12 @@ class controller : public controller_base<controller>
         struct fi_info* hints = fi_dupinfo(info);
         if (!hints) throw NS_LIBFABRIC::fabric_error(0, "fi_dupinfo");
         // clear any Rx address data that might be set
-        free(hints->src_addr);
+        // free(hints->src_addr);
+        // hints->src_addr = nullptr;
+        // hints->src_addrlen = 0;
         free(hints->dest_addr);
-        hints->src_addr = nullptr;
         hints->dest_addr = nullptr;
+        hints->dest_addrlen = 0;
         return hints;
     }
 };

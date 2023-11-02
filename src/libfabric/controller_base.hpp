@@ -210,7 +210,7 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 #endif
 
 #define LIBFABRIC_FI_VERSION_MAJOR 1
-#define LIBFABRIC_FI_VERSION_MINOR 11
+#define LIBFABRIC_FI_VERSION_MINOR 15
 
 namespace NS_DEBUG
 {
@@ -405,6 +405,7 @@ class controller_base
 
     uint32_t max_completions_per_poll_;
     uint32_t msg_rendezvous_threshold_;
+    inline static constexpr uint32_t max_completions_array_limit_ = 256;
 
     static inline thread_local std::chrono::steady_clock::time_point send_poll_stamp;
     static inline thread_local std::chrono::steady_clock::time_point recv_poll_stamp;

@@ -43,17 +43,6 @@ struct region_provider
         return fi_mr_reg(std::forward<Args>(args)...);
     }
 
-    // register region
-    template<typename... Args>
-    static inline int register_memory_attr(Args&&... args)
-    {
-        [[maybe_unused]] auto scp = NS_MEMORY::mrn_deb.scope(__func__, std::forward<Args>(args)...);
-        //        int x = FI_HMEM_ROCR;
-        //        fi_mr_regattr(struct fid_domain *domain, const struct fi_mr_attr *attr,
-        //                    uint64_t flags, struct fid_mr **mr)
-        return fi_mr_regattr(std::forward<Args>(args)...);
-    }
-
     // unregister region
     static inline int unregister_memory(provider_region* region) { return fi_close(&region->fid); }
 
