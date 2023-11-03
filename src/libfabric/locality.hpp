@@ -44,7 +44,7 @@
 namespace oomph
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<false> loc_deb("LOCALIT");
+static NS_DEBUG::enable_print<true> loc_deb("LOCALIT");
 } // namespace oomph
 
 namespace oomph

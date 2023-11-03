@@ -17,7 +17,7 @@
 namespace oomph
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<false> src_deb("__SRC__");
+static NS_DEBUG::enable_print<true> src_deb("__SRC__");
 
 using controller_type = libfabric::controller;
 

@@ -215,8 +215,8 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 namespace NS_DEBUG
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<false> cnb_deb("CONBASE");
-static NS_DEBUG::enable_print<true>  cnb_err("CONBASE");
+static NS_DEBUG::enable_print<true> cnb_deb("CONBASE");
+static NS_DEBUG::enable_print<true> cnb_err("CONBASE");
 } // namespace NS_DEBUG
 
 /** @brief a class to return the number of progressed callbacks */

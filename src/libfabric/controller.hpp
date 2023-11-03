@@ -49,7 +49,7 @@
 namespace NS_DEBUG
 {
 // cppcheck-suppress ConfigurationNotChecked
-static debug::enable_print<false> cnt_deb("CONTROL");
+static debug::enable_print<true>  cnt_deb("CONTROL");
 static debug::enable_print<true>  cnt_err("CONTROL");
 } // namespace NS_DEBUG
 

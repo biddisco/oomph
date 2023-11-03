@@ -33,7 +33,7 @@ using operation_context = libfabric::operation_context;
 using tag_disp = NS_DEBUG::detail::hex<12, uintptr_t>;
 
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<false> com_deb("COMMUNI");
+static NS_DEBUG::enable_print<true>  com_deb("COMMUNI");
 static NS_DEBUG::enable_print<true>  com_err("COMMUNI");
 
 class communicator_impl : public communicator_base<communicator_impl>
