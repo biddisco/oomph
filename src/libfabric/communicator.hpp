@@ -94,7 +94,7 @@ class communicator_impl : public communicator_base<communicator_impl>
             if (ret == 0) { return; }
             else if (ret == -FI_EAGAIN)
             {
-                com_deb.error("Reposting", msg);
+                // com_deb.error("Reposting", msg);
                 // no point stressing the system
                 m_context->get_controller()->poll_for_work_completions(this);
             }
@@ -117,7 +117,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
         // clang-format off
         LF_DEB(com_deb,
-            debug(NS_DEBUG::str<>("send message buffer"),
+            debug(NS_DEBUG::str<>("send_tagged_region"),
                   "->", NS_DEBUG::dec<2>(dst_addr_),
                   send_region,
                   "tag", tag_disp(tag_),
@@ -153,7 +153,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
         // clang-format off
         LF_DEB(com_deb,
-            debug(NS_DEBUG::str<>("recv message buffer"),
+            debug(NS_DEBUG::str<>("recv_tagged_region"),
                   "<-", NS_DEBUG::dec<2>(src_addr_),
                   recv_region,
                   "tag", tag_disp(tag_),
@@ -253,7 +253,7 @@ class communicator_impl : public communicator_base<communicator_impl>
 
         // clang-format off
         LF_DEB(com_deb,
-            debug(NS_DEBUG::str<>("Recv"),
+            debug(NS_DEBUG::str<>("recv"),
                   "thisrank", NS_DEBUG::dec<>(rank()),
                   "rank", NS_DEBUG::dec<>(src),
                   "tag", tag_disp(std::uint64_t(tag)),
@@ -295,7 +295,7 @@ class communicator_impl : public communicator_base<communicator_impl>
 
         // clang-format off
         LF_DEB(com_deb,
-            debug(NS_DEBUG::str<>("Recv"),
+            debug(NS_DEBUG::str<>("shared_recv"),
                   "thisrank", NS_DEBUG::dec<>(rank()),
                   "rank", NS_DEBUG::dec<>(src),
                   "tag", tag_disp(std::uint64_t(tag)),

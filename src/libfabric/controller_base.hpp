@@ -209,8 +209,13 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 // clang-format on
 #endif
 
-#define LIBFABRIC_FI_VERSION_MAJOR 1
-#define LIBFABRIC_FI_VERSION_MINOR 15
+#if defined(HAVE_LIBFABRIC_CXI)
+# define LIBFABRIC_FI_VERSION_MAJOR 1
+# define LIBFABRIC_FI_VERSION_MINOR 15
+#else
+# define LIBFABRIC_FI_VERSION_MAJOR 1
+# define LIBFABRIC_FI_VERSION_MINOR 15
+#endif
 
 namespace NS_DEBUG
 {
@@ -409,6 +414,15 @@ class controller_base
 
     static inline thread_local std::chrono::steady_clock::time_point send_poll_stamp;
     static inline thread_local std::chrono::steady_clock::time_point recv_poll_stamp;
+
+    // set if FI_MR_LOCAL is required (local access requires binding)
+    bool mrlocal = false;
+    // set if FI_MR_ENDPOINT is required (per endpoint memory binding)
+    bool mrbind = false;
+    // set if FI_MR_HRMEM provider requires heterogeneous memory registration
+    bool mrhmem = false;
+  public:
+    bool get_mrbind() { return mrbind;}
 
   public:
     NS_LIBFABRIC::simple_counter<int, false> sends_posted_;
@@ -739,22 +753,21 @@ class controller_base
     }
 
     // --------------------------------------------------------------------
-    constexpr int memory_registration_mode_flags()
+    constexpr std::int64_t memory_registration_mode_flags()
     {
-        // use basic registration for providers except CXI
+        std::int64_t base_flags = FI_MR_VIRT_ADDR | FI_MR_ALLOCATED | FI_MR_PROV_KEY;
+#if OOMPH_ENABLE_DEVICE
+        base_flags = base_flags | FI_MR_HMEM;
+#endif
+        base_flags = base_flags | FI_MR_LOCAL;
+
 #if defined(HAVE_LIBFABRIC_CXI)
-        int base_flags =
-            FI_MR_VIRT_ADDR | FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_LOCAL | FI_MR_MMU_NOTIFY;
-        return base_flags | FI_MR_ENDPOINT | FI_MR_HMEM;
-#elif defined(HAVE_LIBFABRIC_GNI)
-        return FI_MR_BASIC; // FI_MR_SCALABLE one day?;
+        return base_flags | FI_MR_MMU_NOTIFY | FI_MR_ENDPOINT;
+
 #elif defined(HAVE_LIBFABRIC_EFA)
-        return FI_MR_LOCAL;
-        int base_flags =
-            FI_MR_VIRT_ADDR | FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_LOCAL | FI_MR_MMU_NOTIFY;
-        return base_flags | FI_MR_HMEM;
+        return base_flags | FI_MR_MMU_NOTIFY | FI_MR_ENDPOINT;
 #else
-        return FI_MR_BASIC;
+        return base_flags;
 #endif
     }
 
@@ -844,14 +857,14 @@ class controller_base
         bool context = (fabric_hints_->mode & FI_CONTEXT) != 0;
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_CONTEXT"), context));
 
-        bool mrlocal = (fabric_hints_->domain_attr->mr_mode & FI_MR_LOCAL) != 0;
+        mrlocal = (fabric_hints_->domain_attr->mr_mode & FI_MR_LOCAL) != 0;
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_MR_LOCAL"), mrlocal));
 
-        bool mrbind = (fabric_hints_->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0;
+        mrbind = (fabric_hints_->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0;
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_MR_ENDPOINT"), mrbind));
 
         /* Check if provider requires heterogeneous memory registration */
-        bool mrhmem = (fabric_hints_->domain_attr->mr_mode & FI_MR_HMEM) != 0;
+        mrhmem = (fabric_hints_->domain_attr->mr_mode & FI_MR_HMEM) != 0;
         LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("Requires FI_MR_HMEM"), mrhmem));
 
         bool mrhalloc = (fabric_hints_->domain_attr->mr_mode & FI_MR_ALLOCATED) != 0;

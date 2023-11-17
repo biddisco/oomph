@@ -66,11 +66,10 @@ class context_impl : public context_base
 
     region_type make_region(void* const ptr, std::size_t size, int device_id)
     {
-        bool bind_mr = ((m_controller->memory_registration_mode_flags() & FI_MR_ENDPOINT) != 0);
-        if (bind_mr)
+        if (m_controller->get_mrbind())
         {
             void* endpoint = m_controller->get_rx_endpoint().get_ep();
-            return libfabric::memory_segment(m_domain, ptr, size, bind_mr, endpoint, device_id);
+            return libfabric::memory_segment(m_domain, ptr, size, true, endpoint, device_id);
         }
         else { return libfabric::memory_segment(m_domain, ptr, size, false, nullptr, device_id); }
     }

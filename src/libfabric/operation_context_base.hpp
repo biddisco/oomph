@@ -17,6 +17,8 @@ namespace NS_LIBFABRIC
 
 class controller;
 
+static NS_DEBUG::enable_print<true> ctx_bas("CTXBASE");
+
 enum operation_context_type : int32_t
 {
     ctx_unknown = 0,
@@ -43,6 +45,7 @@ struct operation_context_base
     : context_reserved_space()
     , type_{ctype}
     {
+        [[maybe_unused]] auto scp = ctx_bas.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     // type is needed to smiplify the dispatch of errors
