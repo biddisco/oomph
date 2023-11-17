@@ -7,6 +7,8 @@
  * Please, refer to the LICENSE file in the root directory.
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include <cstdint>
+//
 #include <boost/thread.hpp>
 // paths relative to backend
 #include <oomph_libfabric_defines.hpp>
@@ -31,6 +33,12 @@ context_impl::context_impl(MPI_Comm comm, bool thread_safe, bool message_pool_ne
     int rank, size;
     OOMPH_CHECK_MPI_RESULT(MPI_Comm_rank(comm, &rank));
     OOMPH_CHECK_MPI_RESULT(MPI_Comm_size(comm, &size));
+
+    m_ctxt_tag = reinterpret_cast<std::uintptr_t>(this);
+    OOMPH_CHECK_MPI_RESULT(MPI_Bcast(&m_ctxt_tag, 1, MPI_UINT64_T, 0, comm));
+    LF_DEB(src_deb, debug(NS_DEBUG::str<>("Broadcast"), "rank", debug::dec<3>(rank), "context",
+                        debug::ptr(m_ctxt_tag)));
+
     // TODO fix the thread safety
     // problem: controller is a singleton and has problems when 2 contexts are created in the
     // following order: single threaded first, then multi-threaded after

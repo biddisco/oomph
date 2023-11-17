@@ -44,6 +44,7 @@ class context_impl : public context_base
     heap_type                        m_heap;
     domain_type*                     m_domain;
     std::shared_ptr<controller_type> m_controller;
+    std::uintptr_t                   m_ctxt_tag;
 
   public:
     // --------------------------------------------------
@@ -77,6 +78,9 @@ class context_impl : public context_base
     auto& get_heap() noexcept { return m_heap; }
 
     communicator_impl* get_communicator();
+
+    // we must modify all tags to use 32bits of context ptr for uniqueness
+    inline std::uintptr_t get_context_tag() { return m_ctxt_tag; }
 
     inline controller_type* get_controller() /*const */ { return m_controller.get(); }
     const char*             get_transport_option(const std::string& opt);

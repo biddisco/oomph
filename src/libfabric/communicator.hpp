@@ -77,9 +77,9 @@ class communicator_impl : public communicator_base<communicator_impl>
     // --------------------------------------------------------------------
     /// generate a tag with 0xRRRRRRRRtttttttt rank, tag.
     /// original tag can be 32bits, then we add 32bits of rank info.
-    inline std::uint64_t make_tag64(std::uint32_t tag, std::uint32_t rank)
+    inline std::uint64_t make_tag64(std::uint32_t tag, /*std::uint32_t rank, */std::uintptr_t ctxt)
     {
-        return (((std::uint64_t(rank) & 0x00000000FFFFFFFF) << 32) |
+        return (((ctxt & 0x00000000FFFFFFFF) << 32) |
                 ((std::uint64_t(tag) & 0x00000000FFFFFFFF)));
     }
 
@@ -172,7 +172,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         std::size_t* scheduled)
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
-        std::uint64_t         stag = make_tag64(tag, this->rank());
+        std::uint64_t         stag = make_tag64(tag, /*this->rank(), */this->m_context->get_context_tag());
 
         auto& reg = ptr.handle_ref();
 #ifdef EXTRA_SIZE_CHECKS
@@ -234,7 +234,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         std::size_t* scheduled)
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
-        std::uint64_t         stag = make_tag64(tag, src);
+        std::uint64_t         stag = make_tag64(tag, /*src, */this->m_context->get_context_tag());
 
         auto& reg = ptr.handle_ref();
 #ifdef EXTRA_SIZE_CHECKS
@@ -276,7 +276,7 @@ class communicator_impl : public communicator_base<communicator_impl>
         std::atomic<std::size_t>*                                 scheduled)
     {
         [[maybe_unused]] auto scp = com_deb.scope(NS_DEBUG::ptr(this), __func__);
-        std::uint64_t         stag = make_tag64(tag, src);
+        std::uint64_t         stag = make_tag64(tag, /*src, */this->m_context->get_context_tag());
 
         auto& reg = ptr.handle_ref();
 #ifdef EXTRA_SIZE_CHECKS
