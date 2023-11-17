@@ -53,10 +53,8 @@ TEST(unqiue_function, simple_function)
     EXPECT_EQ(3, uf1(4));
 }
 
-
 void test_stats(ctor_stats_data const& stats, int n_ctor, int n_dtor, int n_dtor_of_moved,
     int n_move_ctor, int n_calls);
-
 
 // small function which fits within the stack buffer
 struct small_function
@@ -266,4 +264,11 @@ test_stats(ctor_stats_data const& stats, int n_ctor, int n_dtor, int n_dtor_of_m
     EXPECT_EQ(stats.alloc_ref_count, 0);
 
     //std::cout << stats << std::endl;
+}
+
+int
+main(int argc, char** argv)
+{
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

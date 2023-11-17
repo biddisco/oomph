@@ -155,3 +155,10 @@ TEST(unsafe_shared_ptr, move_assign)
         EXPECT_EQ(d.alloc_ref_count, 0);
     }
 }
+
+int
+main(int argc, char** argv)
+{
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
