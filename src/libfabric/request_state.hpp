@@ -34,12 +34,7 @@ struct request_state
     : base{ctxt, comm, scheduled, rank, tag, std::move(cb)}
     , m_operation_context{this}
     {
-        [[maybe_unused]] auto scp = libfabric::opctx_deb.scope(NS_DEBUG::ptr(this), __func__);
-    }
-
-    ~request_state()
-    {
-        [[maybe_unused]] auto scp = libfabric::opctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+        //[[maybe_unused]] auto scp = libfabric::opctx_deb.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     void progress();
