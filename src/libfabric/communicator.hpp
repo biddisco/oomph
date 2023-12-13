@@ -79,8 +79,8 @@ class communicator_impl : public communicator_base<communicator_impl>
     /// original tag can be 32bits, then we add 32bits of rank info.
     inline std::uint64_t make_tag64(std::uint32_t tag, /*std::uint32_t rank, */std::uintptr_t ctxt)
     {
-        return (((ctxt & 0x00000000FFFFFFFF) << 32) |
-                ((std::uint64_t(tag) & 0x00000000FFFFFFFF)));
+        return (((ctxt & 0x0000000000FFFFFF) << 24) |
+                ((std::uint64_t(tag) & 0x0000000000FFFFFF)));
     }
 
     // --------------------------------------------------------------------
