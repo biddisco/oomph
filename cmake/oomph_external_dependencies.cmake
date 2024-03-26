@@ -1,8 +1,9 @@
 include(oomph_git_submodule)
 include(oomph_external_project)
+include(ExternalProject)
 
 if(OOMPH_GIT_SUBMODULE)
-    update_git_submodules()
+#    update_git_submodules()
 endif()
 
 # ---------------------------------------------------------------------
@@ -20,18 +21,21 @@ find_package(Boost REQUIRED)
 #------------------------------------------------------------------------------
 find_package(Threads REQUIRED)
 
-# ---------------------------------------------------------------------
-# hwmalloc setup
-# ---------------------------------------------------------------------
-cmake_dependent_option(OOMPH_USE_BUNDLED_HWMALLOC "Use bundled hwmalloc lib." ON
-    "OOMPH_USE_BUNDLED_LIBS" OFF)
-if(OOMPH_USE_BUNDLED_HWMALLOC)
-    check_git_submodule(hwmalloc ext/hwmalloc)
-    add_subdirectory(ext/hwmalloc)
-    add_library(HWMALLOC::hwmalloc ALIAS hwmalloc)
-else()
-    find_package(HWMALLOC REQUIRED)
-endif()
+# ------------------------------------------------------------------------------
+# Build/Download HWMalloc
+# ------------------------------------------------------------------------------
+get_external_project(
+  PROJECT_NAME
+  "hwmalloc"
+  FOLDER_NAME
+  "hwmalloc"
+  GIT_REPO
+  "https://github.com/ghex-org/hwmalloc.git"
+  GIT_TAG
+  "master"
+)
+
+add_library(HWMALLOC::hwmalloc ALIAS hwmalloc)
 
 # ---------------------------------------------------------------------
 # google test setup
