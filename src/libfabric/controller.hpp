@@ -86,7 +86,7 @@ class controller : public controller_base<controller>
     // --------------------------------------------------------------------
     constexpr uint64_t caps_flags()
     {
-#if OOMPH_ENABLE_DEVICE
+#if OOMPH_ENABLE_DEVICE && !defined(HAVE_LIBFABRIC_TCP)
         std::int64_t hmem_flags = FI_HMEM;
 #else
         std::int64_t hmem_flags = 0;

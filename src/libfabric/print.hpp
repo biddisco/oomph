@@ -258,47 +258,57 @@ struct ipaddr
     }
 };
 
-// ------------------------------------------------------------------
-// helper fuction for printing CRC32
-// ------------------------------------------------------------------
-inline uint32_t
-crc32(const void* address, size_t length)
-{
+  // ------------------------------------------------------------------
+  // helper fuction for printing CRC32
+  // ------------------------------------------------------------------
+  inline uint32_t crc32(const void* address, size_t length)
+  {
     boost::crc_32_type result;
     result.process_bytes(address, length);
     return result.checksum();
-}
+  }
 
-// ------------------------------------------------------------------
-// helper fuction for printing short memory dump and crc32
-// useful for debugging corruptions in buffers during
-// rma or other transfers
-// ------------------------------------------------------------------
-struct mem_crc32
-{
+  // ------------------------------------------------------------------
+  // helper fuction for printing short memory dump and crc32
+  // useful for debugging corruptions in buffers during
+  // rma or other transfers
+  // ------------------------------------------------------------------
+  struct mem_crc32
+  {
     mem_crc32(const void* a, std::size_t len, const char* txt)
-    : addr_(reinterpret_cast<const uint64_t*>(a))
-    , len_(len)
-    , txt_(txt)
+      : addr_(reinterpret_cast<const std::uint8_t*>(a))
+      , len_(len)
+      , txt_(txt)
     {
     }
-    const uint64_t*      addr_;
-    const std::size_t    len_;
-    const char*          txt_;
+    const std::uint8_t* addr_;
+    const std::size_t len_;
+    const char* txt_;
     friend std::ostream& operator<<(std::ostream& os, mem_crc32 const& p)
     {
-        const uint64_t* uintBuf = static_cast<const uint64_t*>(p.addr_);
-        os << "Memory:";
-        os << " address " << debug::ptr(p.addr_) << " length " << debug::hex<6>(p.len_)
-           << " CRC32:" << debug::hex<8>(crc32(p.addr_, p.len_)) << "\n";
-        for (size_t i = 0; i < (std::min)(size_t(std::ceil(p.len_ / 8.0)), size_t(128)); i++)
+      const std::uint8_t* byte = static_cast<const std::uint8_t*>(p.addr_);
+      os << "Memory:";
+      os << " address " << ptr(p.addr_) << " length " << hex<6,std::size_t>(p.len_)
+         << " CRC32:" << hex<8,std::size_t>(crc32(p.addr_, p.len_)) << "\n";
+      size_t i = 0;
+      while (i < std::min(size_t(128), p.len_))
+      {
+        os << "0x";
+        for (int j = 7; j >= 0; j--)
         {
-            os << debug::hex<16>(*uintBuf++) << " ";
+          os << std::hex << std::setfill('0') << std::setw(2)
+             << (((i + j) > p.len_) ? (int) 0 : (int) byte[i + j]);
         }
-        os << " : " << p.txt_;
-        return os;
+        i += 8;
+        if (i % 32 == 0)
+          os << std::endl;
+        else
+          os << " ";
+      }
+      os << ": " << p.txt_;
+      return os;
     }
-};
+  };
 
 namespace detail
 {

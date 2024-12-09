@@ -210,11 +210,11 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 #endif
 
 #if defined(HAVE_LIBFABRIC_CXI)
-# define LIBFABRIC_FI_VERSION_MAJOR 1
-# define LIBFABRIC_FI_VERSION_MINOR 15
+#define LIBFABRIC_FI_VERSION_MAJOR 2
+#define LIBFABRIC_FI_VERSION_MINOR 0
 #else
-# define LIBFABRIC_FI_VERSION_MAJOR 1
-# define LIBFABRIC_FI_VERSION_MINOR 15
+#define LIBFABRIC_FI_VERSION_MAJOR 2
+#define LIBFABRIC_FI_VERSION_MINOR 0
 #endif
 
 namespace NS_DEBUG
@@ -408,8 +408,8 @@ class controller_base
     std::size_t tx_attr_size_;
     std::size_t rx_attr_size_;
 
-    uint32_t max_completions_per_poll_;
-    uint32_t msg_rendezvous_threshold_;
+    uint32_t                         max_completions_per_poll_;
+    uint32_t                         msg_rendezvous_threshold_;
     inline static constexpr uint32_t max_completions_array_limit_ = 256;
 
     static inline thread_local std::chrono::steady_clock::time_point send_poll_stamp;
@@ -422,7 +422,7 @@ class controller_base
     // set if FI_MR_HRMEM provider requires heterogeneous memory registration
     bool mrhmem = false;
   public:
-    bool get_mrbind() { return mrbind;}
+    bool get_mrbind() { return mrbind; }
 
   public:
     NS_LIBFABRIC::simple_counter<int, false> sends_posted_;

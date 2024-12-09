@@ -33,7 +33,10 @@ static NS_DEBUG::enable_print<true> mrn_deb("REGION_");
 
 /*
 struct fi_mr_attr {
-    const struct iovec *mr_iov;
+    union {
+        const struct iovec *mr_iov;
+        const struct fi_mr_dmabuf *dmabuf;
+    };
     size_t              iov_count;
     uint64_t            access;
     uint64_t            offset;
@@ -49,7 +52,10 @@ struct fi_mr_attr {
         int             neuron;
         int             synapseai;
     } device;
-    void               *hmem_data;
+    void                *hmem_data;
+    size_t               page_size;
+    const struct fid_mr *base_mr;
+    size_t              sub_mr_cnt;
 };
 */
 
@@ -79,11 +85,18 @@ struct region_provider
             /*.auth_key       = */nullptr,
             /*.iface          = */FI_HMEM_SYSTEM,
             /*.device         = */{0},
-#if (FI_MAJOR_VERSION == 1) && (FI_MINOR_VERSION < 17)
+#if (FI_MAJOR_VERSION > 1) || ((FI_MAJOR_VERSION == 1) && FI_MINOR_VERSION >= 17)
+            /*.hmem_data      = */nullptr,
+#endif
+#if (FI_MAJOR_VERSION >= 2)
+            /*page_size       = */static_cast<size_t>(sysconf(_SC_PAGESIZE)),
+            /*base_mr         = */nullptr,
+            /*sub_mr_cnt      = */0,
         };
 #else
-            /*.hmem_data      = */nullptr};
+        };
 #endif
+
         if (device_id >= 0)
         {
 #ifdef OOMPH_ENABLE_DEVICE

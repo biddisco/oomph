@@ -28,7 +28,7 @@
 #endif
 
 #ifdef HAVE_LIBFABRIC_CXI
-#define HAVE_LIBFABRIC_LOCALITY_SIZE 4
+#define HAVE_LIBFABRIC_LOCALITY_SIZE sizeof(long int)
 #endif
 
 #ifdef HAVE_LIBFABRIC_EFA
@@ -44,7 +44,7 @@
 namespace oomph
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<true> loc_deb("LOCALIT");
+static NS_DEBUG::enable_print<true> loc_deb("LOCALTY");
 } // namespace oomph
 
 namespace oomph
