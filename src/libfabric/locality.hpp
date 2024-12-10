@@ -28,7 +28,11 @@
 #endif
 
 #ifdef HAVE_LIBFABRIC_CXI
-#define HAVE_LIBFABRIC_LOCALITY_SIZE sizeof(long int)
+# ifdef HAVE_LIBFABRIC_CXI_1_15
+#  define HAVE_LIBFABRIC_LOCALITY_SIZE sizeof(int)
+# else
+#  define HAVE_LIBFABRIC_LOCALITY_SIZE sizeof(long int)
+# endif
 #endif
 
 #ifdef HAVE_LIBFABRIC_EFA

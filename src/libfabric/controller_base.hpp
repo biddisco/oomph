@@ -209,12 +209,12 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 // clang-format on
 #endif
 
-#if defined(HAVE_LIBFABRIC_CXI)
-#define LIBFABRIC_FI_VERSION_MAJOR 2
-#define LIBFABRIC_FI_VERSION_MINOR 0
+#if defined(HAVE_LIBFABRIC_CXI_1_15)
+# define LIBFABRIC_FI_VERSION_MAJOR 1
+# define LIBFABRIC_FI_VERSION_MINOR 15
 #else
-#define LIBFABRIC_FI_VERSION_MAJOR 2
-#define LIBFABRIC_FI_VERSION_MINOR 0
+# define LIBFABRIC_FI_VERSION_MAJOR 2
+# define LIBFABRIC_FI_VERSION_MINOR 0
 #endif
 
 namespace NS_DEBUG

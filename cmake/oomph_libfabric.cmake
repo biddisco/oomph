@@ -116,6 +116,12 @@ if (OOMPH_WITH_LIBFABRIC)
         oomph_libfabric_add_config_define_namespace(
             DEFINE HAVE_LIBFABRIC_CXI
             NAMESPACE libfabric)
+          option(OOMPH_LIBFABRIC_LEGACY_CXI "Support older libfabric@1.15 +cxi" OFF)
+          if (OOMPH_LIBFABRIC_LEGACY_CXI)
+            oomph_libfabric_add_config_define_namespace(
+                DEFINE HAVE_LIBFABRIC_CXI_1_15
+                NAMESPACE libfabric)
+          endif()
     elseif(OOMPH_LIBFABRIC_PROVIDER MATCHES "efa")
         oomph_libfabric_add_config_define_namespace(
             DEFINE HAVE_LIBFABRIC_EFA
