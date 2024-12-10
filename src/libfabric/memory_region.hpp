@@ -29,7 +29,7 @@
 namespace NS_MEMORY
 {
 
-static NS_DEBUG::enable_print<true> mrn_deb("REGION_");
+static NS_DEBUG::enable_print<false> mrn_deb("REGION_");
 
 /*
 struct fi_mr_attr {

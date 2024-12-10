@@ -17,7 +17,7 @@ namespace NS_LIBFABRIC
 
 class controller;
 
-static NS_DEBUG::enable_print<true> ctx_bas("CTXBASE");
+static NS_DEBUG::enable_print<false> ctx_bas("CTXBASE");
 
 enum operation_context_type : int32_t
 {

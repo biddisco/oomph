@@ -26,7 +26,7 @@
 namespace oomph
 {
 
-static NS_DEBUG::enable_print<true> ctx_deb("CONTEXT");
+static NS_DEBUG::enable_print<false> ctx_deb("CONTEXT");
 
 using controller_type = libfabric::controller;
 
