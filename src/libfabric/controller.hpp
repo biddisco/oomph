@@ -49,8 +49,8 @@
 namespace NS_DEBUG
 {
 // cppcheck-suppress ConfigurationNotChecked
-static debug::enable_print<true>  cnt_deb("CONTROL");
-static debug::enable_print<true>  cnt_err("CONTROL");
+static debug::enable_print<true> cnt_deb("CONTROL");
+static debug::enable_print<true> cnt_err("CONTROL");
 } // namespace NS_DEBUG
 
 namespace oomph::libfabric
@@ -91,7 +91,8 @@ class controller : public controller_base<controller>
 #else
         std::int64_t hmem_flags = 0;
 #endif
-        return hmem_flags | FI_MSG | FI_TAGGED | FI_RMA | FI_READ | FI_WRITE | FI_RECV  | FI_SEND | FI_TRANSMIT | FI_REMOTE_READ | FI_REMOTE_WRITE ;
+        return hmem_flags | FI_MSG | FI_TAGGED | FI_RMA | FI_READ | FI_WRITE | FI_RECV | FI_SEND |
+               FI_TRANSMIT | FI_REMOTE_READ | FI_REMOTE_WRITE;
     }
 
     // --------------------------------------------------------------------
@@ -379,9 +380,9 @@ class controller : public controller_base<controller>
                 }
                 else if (e.err != FI_SUCCESS)
                 {
-                    NS_DEBUG::cnt_err.error(debug::str<>("poll_recv_queue"), "error code", debug::dec<>(-e.err), "flags",
-                        debug::hex<6>(e.flags), "len", debug::hex<6>(e.len), "context",
-                        NS_DEBUG::ptr(e.op_context), "error msg",
+                    NS_DEBUG::cnt_err.error(debug::str<>("poll_recv_queue"), "error code",
+                        debug::dec<>(-e.err), "flags", debug::hex<6>(e.flags), "len",
+                        debug::hex<6>(e.len), "context", NS_DEBUG::ptr(e.op_context), "error msg",
                         fi_cq_strerror(rx_cq, e.prov_errno, e.err_data, (char*)e.buf, e.len));
                 }
                 operation_context* handler = reinterpret_cast<operation_context*>(e.op_context);

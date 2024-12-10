@@ -50,10 +50,7 @@ struct mpi_environment
                 std::terminate();
             }
         }
-        else
-        {
-            MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &mode);
-        }
+        else { MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &mode); }
         MPI_Comm_size(MPI_COMM_WORLD, &size);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     }

@@ -41,8 +41,8 @@ class context
     std::unique_ptr<schedule> m_schedule;
 
   public:
-    context(MPI_Comm comm, bool thread_safe = true,
-        bool message_pool_never_free = false, std::size_t message_pool_reserve = 1);
+    context(MPI_Comm comm, bool thread_safe = true, bool message_pool_never_free = false,
+        std::size_t message_pool_reserve = 1);
 
     context(context const&) = delete;
 
@@ -99,7 +99,7 @@ class context
     }
 #endif
 
-    communicator get_communicator();//unsigned int tag_range = 0);
+    communicator get_communicator(); //unsigned int tag_range = 0);
 
     //unsigned int num_tag_ranges() const noexcept { return m_tag_range_factory.num_ranges(); }
 

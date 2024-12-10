@@ -26,7 +26,7 @@ class context_impl : public context_base
     using heap_type = hwmalloc::heap<context_impl>;
 
   private:
-    heap_type    m_heap;
+    heap_type m_heap;
     //rma_context  m_rma_context;
     unsigned int m_n_tag_bits;
 
@@ -82,7 +82,7 @@ class context_impl : public context_base
 
     unsigned int num_tag_bits() const noexcept { return m_n_tag_bits; }
 
-    const char *get_transport_option(const std::string &opt);
+    const char* get_transport_option(const std::string& opt);
 };
 
 template<>

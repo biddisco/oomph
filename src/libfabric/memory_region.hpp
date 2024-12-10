@@ -69,29 +69,31 @@ struct region_provider
 
     // register region
     static inline int fi_register_memory(provider_domain* pd, int device_id, const void* buf,
-        size_t len, uint64_t access_flags, uint64_t offset, uint64_t request_key, struct fid_mr** mr)
+        size_t len, uint64_t access_flags, uint64_t offset, uint64_t request_key,
+        struct fid_mr** mr)
     {
-        [[maybe_unused]] auto scp = NS_MEMORY::mrn_deb.scope(__func__, NS_DEBUG::ptr(buf), NS_DEBUG::dec<>(len), device_id);
+        [[maybe_unused]] auto scp =
+            NS_MEMORY::mrn_deb.scope(__func__, NS_DEBUG::ptr(buf), NS_DEBUG::dec<>(len), device_id);
         //
-        struct iovec addresses = {/*.iov_base = */const_cast<void*>(buf), /*.iov_len = */len};
-        fi_mr_attr attr = {
-            /*.mr_iov         = */&addresses,
-            /*.iov_count      = */1,
-            /*.access         = */access_flags,
-            /*.offset         = */offset,
-            /*.requested_key  = */request_key,
-            /*.context        = */nullptr,
-            /*.auth_key_size  = */0,
-            /*.auth_key       = */nullptr,
-            /*.iface          = */FI_HMEM_SYSTEM,
-            /*.device         = */{0},
+        struct iovec addresses = {/*.iov_base = */ const_cast<void*>(buf), /*.iov_len = */ len};
+        fi_mr_attr   attr = {
+            /*.mr_iov         = */ &addresses,
+            /*.iov_count      = */ 1,
+            /*.access         = */ access_flags,
+            /*.offset         = */ offset,
+            /*.requested_key  = */ request_key,
+            /*.context        = */ nullptr,
+            /*.auth_key_size  = */ 0,
+            /*.auth_key       = */ nullptr,
+            /*.iface          = */ FI_HMEM_SYSTEM,
+            /*.device         = */ {0},
 #if (FI_MAJOR_VERSION > 1) || ((FI_MAJOR_VERSION == 1) && FI_MINOR_VERSION >= 17)
-            /*.hmem_data      = */nullptr,
+            /*.hmem_data      = */ nullptr,
 #endif
 #if (FI_MAJOR_VERSION >= 2)
-            /*page_size       = */static_cast<size_t>(sysconf(_SC_PAGESIZE)),
-            /*base_mr         = */nullptr,
-            /*sub_mr_cnt      = */0,
+            /*page_size       = */ static_cast<size_t>(sysconf(_SC_PAGESIZE)),
+            /*base_mr         = */ nullptr,
+            /*sub_mr_cnt      = */ 0,
         };
 #else
         };
@@ -105,15 +107,17 @@ struct region_provider
             attr.device.cuda = handle;
 #if defined(OOMPH_DEVICE_CUDA)
             attr.iface = FI_HMEM_CUDA;
-            LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("CUDA"), "set device id", device_id, handle));
+            LF_DEB(NS_MEMORY::mrn_deb,
+                trace(NS_DEBUG::str<>("CUDA"), "set device id", device_id, handle));
 #elif defined(OOMPH_DEVICE_HIP)
             attr.iface = FI_HMEM_ROCR;
-            LF_DEB(NS_MEMORY::mrn_deb, trace(NS_DEBUG::str<>("HIP"), "set device id", device_id, handle));
+            LF_DEB(NS_MEMORY::mrn_deb,
+                trace(NS_DEBUG::str<>("HIP"), "set device id", device_id, handle));
 #endif
 #endif
         }
         uint64_t flags = 0;
-        int ret = fi_mr_regattr(pd, &attr, flags, mr);
+        int      ret = fi_mr_regattr(pd, &attr, flags, mr);
         if (ret) { throw NS_LIBFABRIC::fabric_error(int(ret), "register_memory"); }
         return ret;
     }
@@ -250,13 +254,17 @@ struct memory_handle
     {
         (void)region;
 #if 1 || has_debug
-            os << "region "      << NS_DEBUG::ptr(&region)
-            //<< " fi_region "  << NS_DEBUG::ptr(region.region_)
-            << " address "    << NS_DEBUG::ptr(region.address_)
-            << " size "       << NS_DEBUG::hex<6>(region.size_)
-            //<< " used_space " << NS_DEBUG::hex<6>(region.used_space_/*size_*/)
-            << " loc key "  << NS_DEBUG::ptr(region.region_ ? region_provider::get_local_key(region.region_) : nullptr)
-            << " rem key " << NS_DEBUG::ptr(region.region_ ? region_provider::get_remote_key(region.region_) : 0);
+        os << "region "
+           << NS_DEBUG::ptr(&region)
+           //<< " fi_region "  << NS_DEBUG::ptr(region.region_)
+           << " address " << NS_DEBUG::ptr(region.address_) << " size "
+           << NS_DEBUG::hex<6>(region.size_)
+           //<< " used_space " << NS_DEBUG::hex<6>(region.used_space_/*size_*/)
+           << " loc key "
+           << NS_DEBUG::ptr(
+                  region.region_ ? region_provider::get_local_key(region.region_) : nullptr)
+           << " rem key "
+           << NS_DEBUG::ptr(region.region_ ? region_provider::get_remote_key(region.region_) : 0);
         ///// clang-format off
         ///// clang-format on
 #endif

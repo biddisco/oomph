@@ -33,8 +33,7 @@ struct operation_context : public operation_context_base<operation_context>
     : operation_context_base(ctx_any)
     , m_req{req}
     {
-        [[maybe_unused]] auto scp =
-            opctx_deb.scope(NS_DEBUG::ptr(this), __func__, "request", req);
+        [[maybe_unused]] auto scp = opctx_deb.scope(NS_DEBUG::ptr(this), __func__, "request", req);
     }
 
     // --------------------------------------------------------------------

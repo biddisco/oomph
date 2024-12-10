@@ -141,7 +141,8 @@ main(int argc, char* argv[])
 #endif
         char header[256];
 
-        auto schedule_recv = [&](int j) {
+        auto schedule_recv = [&](int j)
+        {
             MPI_Irecv(rbuffers[j], buff_size, MPI_BYTE, peer_rank, thrid * inflight + j, mpi_comm,
                 &rreq[j]);
             dbg += nthr;
@@ -150,7 +151,8 @@ main(int argc, char* argv[])
             lrecv++;
         };
 
-        auto schedule_send = [&](int j) {
+        auto schedule_send = [&](int j)
+        {
             MPI_Isend(sbuffers[j], buff_size, MPI_BYTE, peer_rank, thrid * inflight + j, mpi_comm,
                 &sreq[j]);
             dbg += nthr;
@@ -208,10 +210,10 @@ main(int argc, char* argv[])
                 }
             }
 #endif
-        delete []sbuffers;
-        delete []rbuffers;
+            delete[] sbuffers;
+            delete[] rbuffers;
+        }
     }
-}
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 1)

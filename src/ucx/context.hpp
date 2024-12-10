@@ -65,10 +65,11 @@ class context_impl : public context_base
     std::size_t                               m_req_size;
     std::unique_ptr<worker_type>              m_worker; // shared, serialized - per rank
     std::vector<std::unique_ptr<worker_type>> m_workers;
+
   public:
-    ucx_mutex                                 m_mutex;
-    recv_req_queue_type                       m_recv_req_queue;
-    recv_req_queue_type                       m_cancel_recv_req_queue;
+    ucx_mutex           m_mutex;
+    recv_req_queue_type m_recv_req_queue;
+    recv_req_queue_type m_cancel_recv_req_queue;
 
     friend struct worker_t;
 
@@ -236,7 +237,7 @@ class context_impl : public context_base
         return found;
     }
 
-    const char *get_transport_option(const std::string &opt);
+    const char* get_transport_option(const std::string& opt);
 
     unsigned int num_tag_bits() const noexcept { return OOMPH_UCX_TAG_BITS; }
 };

@@ -421,6 +421,7 @@ class controller_base
     bool mrbind = false;
     // set if FI_MR_HRMEM provider requires heterogeneous memory registration
     bool mrhmem = false;
+
   public:
     bool get_mrbind() { return mrbind; }
 
