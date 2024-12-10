@@ -14,7 +14,7 @@ find_package(MPI REQUIRED COMPONENTS CXX)
 # ---------------------------------------------------------------------
 # Boost setup
 # ---------------------------------------------------------------------
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED CONFIG)
 
 #------------------------------------------------------------------------------
 # Find Threads

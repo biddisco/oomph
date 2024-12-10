@@ -17,6 +17,18 @@ make_version(OOMPH 0 3 0)
 project(oomph VERSION ${OOMPH_VERSION})
 enable_language(CXX)
 
+# ------------------------------------------------------------------------------
+# Policies
+# ------------------------------------------------------------------------------
+function(set_policy POLICY_NAME POLICY_VALUE)
+  if(POLICY ${POLICY_NAME})
+    cmake_policy(SET ${POLICY_NAME} ${POLICY_VALUE})
+  endif()
+endfunction()
+
+set_policy(CMP0074 NEW) # find_package uses XXX_ROOT vars using PackageName
+set_policy(CMP0144 NEW) # find_package allows XXX_ROOT vars using PACKAGENAME Uppercase
+
 # ---------------------------------------------------------------------
 # CMake setup, C++ version, build type, modules, etc
 # ---------------------------------------------------------------------

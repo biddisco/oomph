@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED COMPONENTS thread)
+find_package(Boost REQUIRED CONFIG COMPONENTS thread)
 
 # dummy library of our private headers
 add_library(oomph_private_libfabric_headers INTERFACE)
