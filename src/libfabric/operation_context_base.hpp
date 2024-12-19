@@ -19,14 +19,14 @@ class controller;
 
 static NS_DEBUG::enable_print<false> ctx_bas("CTXBASE");
 
-enum operation_context_type : int32_t
-{
-    ctx_unknown = 0,
-    ctx_sender = 1,
-    ctx_receiver = 2,
-    ctx_rma = 3,
-    ctx_any = 4,
-};
+// enum operation_context_type : int32_t
+// {
+//     ctx_unknown = 0,
+//     ctx_sender = 1,
+//     ctx_receiver = 2,
+//     ctx_rma = 3,
+//     ctx_any = 4,
+// };
 
 // This struct holds the ready state of a future
 // we must also store the context used in libfabric, in case
@@ -38,18 +38,18 @@ struct operation_context_base
     // libfabric requires some space for it's internal bookkeeping
     // so the first member of this struct must be fi_context
     fi_context             context_reserved_space;
-    operation_context_type type_;
+    // operation_context_type type_;
 
   public:
-    operation_context_base(operation_context_type ctype)
+    operation_context_base(/*operation_context_type ctype*/)
     : context_reserved_space()
-    , type_{ctype}
+    // , type_{ctype}
     {
         [[maybe_unused]] auto scp = ctx_bas.scope(NS_DEBUG::ptr(this), __func__);
     }
 
     // type is needed to smiplify the dispatch of errors
-    operation_context_type get_context_type() { return type_; }
+    // operation_context_type get_context_type() { return type_; }
 
     // error
     void handle_error(struct fi_cq_err_entry& err)
