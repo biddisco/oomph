@@ -49,8 +49,12 @@
 namespace NS_DEBUG
 {
 // cppcheck-suppress ConfigurationNotChecked
-static NS_DEBUG::enable_print<false> cnt_deb("CONTROL");
-static NS_DEBUG::enable_print<false> cnt_err("CONTROL");
+
+using namespace oomph::debug;
+template <int Level>
+inline /*constexpr*/ NS_DEBUG::print_threshold<Level, 0> cnt_deb("CONTROL");
+//
+static NS_DEBUG::enable_print<true> cnt_err("CONTROL");
 } // namespace NS_DEBUG
 
 namespace oomph::libfabric
@@ -103,19 +107,19 @@ class controller : public controller_base<controller>
     // send address to rank 0 and receive array of all localities
     void MPI_exchange_localities(fid_av* av, MPI_Comm comm, int rank, int size)
     {
-        [[maybe_unused]] auto scp = NS_DEBUG::cnt_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = NS_DEBUG::cnt_deb<9>.scope(NS_DEBUG::ptr(this), __func__);
         std::vector<char>     localities(size * locality_defs::array_size, 0);
         //
         if (rank > 0)
         {
-            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending here"), iplocality(here_), "size",
+            LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("sending here"), iplocality(here_), "size",
                                           locality_defs::array_size));
             /*int err = */ MPI_Send(here_.fabric_data(), locality_defs::array_size, MPI_CHAR,
                 0, // dst rank
                 0, // tag
                 comm);
 
-            LF_DEB(NS_DEBUG::cnt_deb,
+            LF_DEB(NS_DEBUG::cnt_deb<9>,
                 debug(debug::str<>("receiving all"), "size", locality_defs::array_size));
 
             MPI_Status status;
@@ -123,15 +127,15 @@ class controller : public controller_base<controller>
                 0, // src rank
                 0, // tag
                 comm, &status);
-            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("received addresses")));
+            LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("received addresses")));
         }
         else
         {
-            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("receiving addresses")));
+            LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("receiving addresses")));
             memcpy(&localities[0], here_.fabric_data(), locality_defs::array_size);
             for (int i = 1; i < size; ++i)
             {
-                LF_DEB(NS_DEBUG::cnt_deb,
+                LF_DEB(NS_DEBUG::cnt_deb<9>,
                     debug(debug::str<>("receiving address"), debug::dec<>(i)));
                 MPI_Status status;
                 /*int err = */ MPI_Recv(&localities[i * locality_defs::array_size],
@@ -139,13 +143,13 @@ class controller : public controller_base<controller>
                     i, // src rank
                     0, // tag
                     comm, &status);
-                LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("received address"), debug::dec<>(i)));
+                LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("received address"), debug::dec<>(i)));
             }
 
-            LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending all")));
+            LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("sending all")));
             for (int i = 1; i < size; ++i)
             {
-                LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("sending to"), debug::dec<>(i)));
+                LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("sending to"), debug::dec<>(i)));
                 /*int err = */ MPI_Send(&localities[0], size * locality_defs::array_size, MPI_CHAR,
                     i, // dst rank
                     0, // tag
@@ -154,7 +158,7 @@ class controller : public controller_base<controller>
         }
 
         // all ranks should now have a full localities vector
-        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("populating vector")));
+        LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("populating vector")));
         for (int i = 0; i < size; ++i)
         {
             locality temp;
@@ -169,17 +173,17 @@ class controller : public controller_base<controller>
     // and insert each one into the address vector
     void exchange_addresses(fid_av* av, MPI_Comm mpi_comm)
     {
-        [[maybe_unused]] auto scp = NS_DEBUG::cnt_deb.scope(NS_DEBUG::ptr(this), __func__);
+        [[maybe_unused]] auto scp = NS_DEBUG::cnt_deb<9>.scope(NS_DEBUG::ptr(this), __func__);
 
         int rank, size;
         MPI_Comm_rank(mpi_comm, &rank);
         MPI_Comm_size(mpi_comm, &size);
 
-        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("initialize_localities"), size, "localities"));
+        LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("initialize_localities"), size, "localities"));
 
         MPI_exchange_localities(av, mpi_comm, rank, size);
         debug_print_av_vector(size);
-        LF_DEB(NS_DEBUG::cnt_deb, debug(debug::str<>("Done localities")));
+        LF_DEB(NS_DEBUG::cnt_deb<9>, debug(debug::str<>("Done localities")));
     }
 
     // --------------------------------------------------------------------
@@ -255,8 +259,8 @@ class controller : public controller_base<controller>
             // then another thread is polling now, just exit
             if (!bypass_tx_lock() && !lock.owns_lock()) { return -1; }
 
-            static auto polling = NS_DEBUG::cnt_deb.make_timer(1, debug::str<>("poll send queue"));
-            LF_DEB(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(send_cq)));
+            static auto polling = NS_DEBUG::cnt_deb<9>.make_timer(1, debug::str<>("poll send queue"));
+            LF_DEB(NS_DEBUG::cnt_deb<9>, timed(polling, NS_DEBUG::ptr(send_cq)));
 
             // poll for completions
             {
@@ -300,14 +304,14 @@ class controller : public controller_base<controller>
             for (int i = 0; i < ret; ++i)
             {
                 ++sends_complete;
-                LF_DEB(NS_DEBUG::cnt_deb,
+                LF_DEB(NS_DEBUG::cnt_deb<9>,
                     debug(debug::str<>("Completion"), i, debug::dec<2>(i), "txcq flags",
                         fi_tostr(&entry[i].flags, FI_TYPE_CQ_EVENT_FLAGS), "(",
                         debug::dec<>(entry[i].flags), ")", "context",
                         NS_DEBUG::ptr(entry[i].op_context), "length", debug::hex<6>(entry[i].len)));
                 if ((entry[i].flags & (FI_TAGGED | FI_SEND | FI_MSG)) != 0)
                 {
-                    LF_DEB(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb<9>,
                         debug(debug::str<>("Completion"), "txcq tagged send completion",
                             NS_DEBUG::ptr(entry[i].op_context)));
 
@@ -352,8 +356,8 @@ class controller : public controller_base<controller>
             // then another thread is polling now, just exit
             if (!bypass_rx_lock() && !lock.owns_lock()) { return -1; }
 
-            static auto polling = NS_DEBUG::cnt_deb.make_timer(1, debug::str<>("poll recv queue"));
-            LF_DEB(NS_DEBUG::cnt_deb, timed(polling, NS_DEBUG::ptr(rx_cq)));
+            static auto polling = NS_DEBUG::cnt_deb<2>.make_timer(1, debug::str<>("poll recv queue"));
+            LF_DEB(NS_DEBUG::cnt_deb<2>, timed(polling, NS_DEBUG::ptr(rx_cq)));
 
             // poll for completions
             {
@@ -369,7 +373,7 @@ class controller : public controller_base<controller>
                 // from the manpage 'man 3 fi_cq_readerr'
                 if (e.err == FI_ECANCELED)
                 {
-                    LF_DEB(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb<1>,
                         debug(debug::str<>("rxcq Cancelled"), "flags", debug::hex<6>(e.flags),
                             "len", debug::hex<6>(e.len), "context", NS_DEBUG::ptr(e.op_context)));
                     // the request was cancelled, we can simply exit
@@ -399,14 +403,14 @@ class controller : public controller_base<controller>
             for (int i = 0; i < ret; ++i)
             {
                 ++recvs_complete;
-                LF_DEB(NS_DEBUG::cnt_deb,
+                LF_DEB(NS_DEBUG::cnt_deb<2>,
                     debug(debug::str<>("Completion"), i, "rxcq flags",
                         fi_tostr(&entry[i].flags, FI_TYPE_CQ_EVENT_FLAGS), "(",
                         debug::dec<>(entry[i].flags), ")", "context",
                         NS_DEBUG::ptr(entry[i].op_context), "length", debug::hex<6>(entry[i].len)));
                 if ((entry[i].flags & (FI_TAGGED | FI_RECV)) != 0)
                 {
-                    LF_DEB(NS_DEBUG::cnt_deb,
+                    LF_DEB(NS_DEBUG::cnt_deb<2>,
                         debug(debug::str<>("Completion"), "rxcq tagged recv completion",
                             NS_DEBUG::ptr(entry[i].op_context)));
 

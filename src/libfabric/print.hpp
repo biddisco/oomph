@@ -722,5 +722,21 @@ struct enable_print<true>
     }
 };
 
+// ------------------------------------------------------------------
+// helper for N>M true/false
+// ------------------------------------------------------------------
+template <int Level, int Threshold>
+struct check_level : std::integral_constant<bool, Level <= Threshold>
+{
+};
+
+template <int Level, int Threshold>
+struct print_threshold : enable_print<check_level<Level, Threshold>::value>
+{
+    using base_type = enable_print<check_level<Level, Threshold>::value>;
+    // inherit constructor
+    using base_type::base_type;
+};
+
 } // namespace NS_DEBUG
 /// \endcond

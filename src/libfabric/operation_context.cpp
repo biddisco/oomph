@@ -18,7 +18,7 @@ namespace oomph::libfabric
 void
 operation_context::handle_cancelled()
 {
-    [[maybe_unused]] auto scp = opctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+    [[maybe_unused]] auto scp = opctx_deb<1>.scope(NS_DEBUG::ptr(this), __func__);
     // enqueue the cancelled/callback
     if (std::holds_alternative<detail::request_state*>(m_req))
     {
@@ -38,7 +38,7 @@ operation_context::handle_cancelled()
 int
 operation_context::handle_tagged_recv_completion_impl(void* user_data)
 {
-    [[maybe_unused]] auto scp = opctx_deb.scope(NS_DEBUG::ptr(this), __func__);
+    [[maybe_unused]] auto scp = opctx_deb<1>.scope(NS_DEBUG::ptr(this), __func__);
     if (std::holds_alternative<detail::request_state*>(m_req))
     {
         // regular (non-shared) recv
@@ -83,7 +83,7 @@ operation_context::handle_tagged_recv_completion_impl(void* user_data)
     else
     {
         detail::request_state** req = reinterpret_cast<detail::request_state**>(&m_req);
-        LF_DEB(NS_MEMORY::opctx_deb,
+        LF_DEB(NS_MEMORY::opctx_deb<9>,
             error(NS_DEBUG::str<>("invalid request_state"), this, "request", NS_DEBUG::ptr(req)));
         throw std::runtime_error("Request state invalid in handle_tagged_recv");
     }
