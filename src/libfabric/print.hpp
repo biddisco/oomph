@@ -381,7 +381,7 @@ struct hostname_print_helper
                 auto pos = e.find(s);
                 if (pos != std::string::npos)
                 {
-                    //std::cout << "Got a rank string : " << e << std::endl;
+                    // std::cout << "Got a rank string : " << e << std::endl;
                     return std::stoi(e.substr(pos + s.size(), 5));
                 }
             }

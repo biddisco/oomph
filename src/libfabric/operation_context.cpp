@@ -43,7 +43,7 @@ operation_context::handle_tagged_recv_completion_impl(void* user_data)
     {
         // regular (non-shared) recv
         auto s = std::get<detail::request_state*>(m_req);
-        //if (std::this_thread::get_id() == thread_id_)
+        // if (std::this_thread::get_id() == thread_id_)
         if (reinterpret_cast<oomph::communicator_impl*>(user_data) == s->m_comm)
         {
             if (!s->m_comm->has_reached_recursion_depth())

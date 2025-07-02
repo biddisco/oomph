@@ -45,8 +45,8 @@
 #include "memory_region.hpp"
 #include "operation_context_base.hpp"
 
-//#define DISABLE_FI_INJECT
-//#define EXCESSIVE_POLLING_BACKOFF_MICRO_S 50
+// #define DISABLE_FI_INJECT
+// #define EXCESSIVE_POLLING_BACKOFF_MICRO_S 50
 
 // ------------------------------------------------------------------
 
@@ -171,9 +171,9 @@ libfabric_rendezvous_threshold(int def_val)
 // ------------------------------------------------
 #ifdef HAVE_LIBFABRIC_GNI
 #include "rdma/fi_ext_gni.h"
-//#define OOMPH_GNI_REG "none"
+// #define OOMPH_GNI_REG "none"
 #define OOMPH_GNI_REG "internal"
-//#define OOMPH_GNI_REG "udreg"
+// #define OOMPH_GNI_REG "udreg"
 
 static std::vector<std::pair<int, std::string>> gni_strs = {
     {GNI_MR_CACHE, "GNI_MR_CACHE"},
@@ -209,9 +209,9 @@ static std::vector<std::pair<int, std::string>> gni_ints = {
 // clang-format on
 #endif
 
-// the libfabric library expects us to ask for an API supported version, so if we know we support
-// api 2.0, then we ask for that, but the cxi legacy library on daint only supports 1.15,
-// so drop back to that version if needed
+// the libfabric library expects us to ask for an API supported version, so if
+// we know we support api 2.0, then we ask for that, but the cxi legacy library
+// on daint only supports 1.15, so drop back to that version if needed
 #if defined(OOMPH_LIBFABRIC_V1_API)
 #define LIBFABRIC_FI_VERSION_MAJOR 1
 #define LIBFABRIC_FI_VERSION_MINOR 15
@@ -389,6 +389,7 @@ class controller_base
     endpoint_context_pool tx_endpoints_;
     endpoint_context_pool rx_endpoints_;
 
+    bool               display_fabric_info_; // for debugging purposes, show fi_info hints
     struct fi_info*    fabric_info_;
     struct fid_fabric* fabric_;
     struct fid_domain* fabric_domain_;
@@ -448,6 +449,7 @@ class controller_base
     : eps_(nullptr)
     , tx_endpoints_(1)
     , rx_endpoints_(1)
+    , display_fabric_info_(false)
     , fabric_info_(nullptr)
     , fabric_(nullptr)
     , fabric_domain_(nullptr)
@@ -519,6 +521,10 @@ class controller_base
     }
 
     // --------------------------------------------------------------------
+    // only used in check_libfabric quick test for helpful output
+    void enable_debug() { display_fabric_info_ = true; }
+
+    // --------------------------------------------------------------------
     // setup an endpoint for receiving messages,
     // usually an rx endpoint is shared by all threads
     endpoint_wrapper create_rx_endpoint(struct fid_domain* domain, struct fi_info* info,
@@ -585,7 +591,8 @@ class controller_base
         else if (endpoint_type_ != endpoint_type::scalableTxRx)
         {
 #if defined(HAVE_LIBFABRIC_SOCKETS) || defined(HAVE_LIBFABRIC_TCP) ||                              \
-    defined(HAVE_LIBFABRIC_VERBS) || defined(HAVE_LIBFABRIC_CXI) || defined(HAVE_LIBFABRIC_EFA)
+    defined(HAVE_LIBFABRIC_SHM) || defined(HAVE_LIBFABRIC_VERBS) || defined(HAVE_LIBFABRIC_CXI) || \
+    defined(HAVE_LIBFABRIC_EFA)
             // it appears that the rx endpoint cannot be enabled if it does not
             // have a Tx CQ (at least when using sockets), so we create a dummy
             // Tx CQ and bind it just to stop libfabric from triggering an error.
@@ -795,6 +802,8 @@ class controller_base
         fabric_hints_->addr_format = FI_SOCKADDR_IN;
 #elif defined(HAVE_LIBFABRIC_EFA)
         fabric_hints_->addr_format = FI_ADDR_EFA;
+#elif defined(HAVE_LIBFABRIC_SHM)
+        fabric_hints_->addr_format = FI_ADDR_STR;
 #endif
 
         fabric_hints_->caps = caps_flags();
@@ -827,7 +836,7 @@ class controller_base
             LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("FI_THREAD_FID")));
             // Enable thread safe mode (Does not work with psm2 provider)
             // fabric_hints_->domain_attr->threading = FI_THREAD_SAFE;
-            //fabric_hints_->domain_attr->threading = FI_THREAD_FID;
+            // fabric_hints_->domain_attr->threading = FI_THREAD_FID;
             fabric_hints_->domain_attr->threading = threadlevel_flags();
         }
         else
@@ -942,6 +951,12 @@ class controller_base
         // is set by querying the tx/tx attr sizes
         tx_attr_size_ = std::min(size_t(512), fabric_info_->tx_attr->size / 2);
         rx_attr_size_ = std::min(size_t(512), fabric_info_->rx_attr->size / 2);
+        // Print fabric info to a human-readable string if available
+        if (display_fabric_info_ && fabric_info_)
+        {
+            const char* info_str = fi_tostr(fabric_info_, FI_TYPE_INFO);
+            if (info_str) { std::cout << "Libfabric fabric info:\n" << info_str << std::endl; }
+        }
         fi_freeinfo(fabric_hints_);
     }
 
@@ -1229,20 +1244,16 @@ class controller_base
         {
             std::string err =
                 std::to_string(addrlen) + "=" + std::to_string(locality_defs::array_size);
-            NS_LIBFABRIC::fabric_error(ret, "fi_getname - size error or other problem " + err);
+            NS_LIBFABRIC::fabric_error(ret, "fi_getname - error (address size ?) " + err);
         }
 
         // optimized out when debug logging is false
         if constexpr (NS_DEBUG::cnb_deb.is_enabled())
         {
-            std::stringstream temp1;
-            for (std::size_t i = 0; i < locality_defs::array_length; ++i)
-            {
-                temp1 << debug::ipaddr(&local_addr[i]) << " - ";
-            }
+            LF_DEB(NS_DEBUG::cnb_deb,
+                debug(debug::str<>("raw address data"), "size", debug::dec<4>(addrlen), " : ",
+                    locality::to_str(local_addr, av_)));
 
-            LF_DEB(NS_DEBUG::cnb_deb, debug(debug::str<>("raw address data"), "size",
-                                          debug::dec<>(addrlen), " : ", temp1.str().c_str()));
             std::stringstream temp2;
             for (std::size_t i = 0; i < locality_defs::array_length; ++i)
             {
@@ -1300,7 +1311,7 @@ class controller_base
     inline bool isTerminated()
     {
         return false;
-        //return (qp_endpoint_map_.size() == 0);
+        // return (qp_endpoint_map_.size() == 0);
     }
 
     // --------------------------------------------------------------------
@@ -1312,7 +1323,7 @@ class controller_base
         {
             int ret = fi_av_lookup(av_, fi_addr_t(i), addr.fabric_data_writable(), &addrlen);
             addr.set_fi_address(fi_addr_t(i));
-            if ((ret == 0) && (addrlen == locality_defs::array_size))
+            if ((ret == 0) && (addrlen <= locality_defs::array_size))
             {
                 LF_DEB(NS_DEBUG::cnb_deb,
                     debug(debug::str<>("address vector"), debug::dec<3>(i), iplocality(addr)));

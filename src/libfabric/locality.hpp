@@ -16,6 +16,8 @@
 #include <utility>
 //
 #include <rdma/fabric.h>
+#include <rdma/fi_domain.h>
+//
 #include <netinet/in.h>
 #include <arpa/inet.h>
 //
@@ -43,6 +45,10 @@
     defined(HAVE_LIBFABRIC_SOCKETS) || defined(HAVE_LIBFABRIC_PSM2)
 #define HAVE_LIBFABRIC_LOCALITY_SIZE 16
 #define HAVE_LIBFABRIC_LOCALITY_SOCKADDR
+#endif
+
+#if defined(HAVE_LIBFABRIC_SHM)
+#define HAVE_LIBFABRIC_LOCALITY_SIZE 24
 #endif
 
 namespace oomph
@@ -189,6 +195,8 @@ struct locality
         return data_[0];
 #elif defined(HAVE_LIBFABRIC_EFA)
         return data_[0];
+#elif defined(HAVE_LIBFABRIC_SHM)
+        return data_[0];
 #else
         throw fabric_error(0, "unsupported fabric provider, please fix ASAP");
 #endif
@@ -203,6 +211,8 @@ struct locality
 #elif defined(HAVE_LIBFABRIC_CXI)
         return data[0];
 #elif defined(HAVE_LIBFABRIC_EFA)
+        return data[0];
+#elif defined(HAVE_LIBFABRIC_SHM)
         return data[0];
 #else
         throw fabric_error(0, "unsupported fabric provider, please fix ASAP");
@@ -223,6 +233,16 @@ struct locality
     inline const void* fabric_data() const { return data_.data(); }
 
     inline char* fabric_data_writable() { return reinterpret_cast<char*>(data_.data()); }
+
+    static std::string to_str(locality_data const& data, struct fid_av* av)
+    {
+        char        sbuf[256];
+        size_t      buflen = 256;
+        const char* straddr_ret = fi_av_straddr(av, data.data(), sbuf, &buflen);
+        std::string result = straddr_ret ? straddr_ret : "";
+        // free((char*)(straddr_ret));
+        return result;
+    }
 
   private:
     friend bool operator==(locality const& lhs, locality const& rhs)

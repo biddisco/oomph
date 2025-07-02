@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 # CMake version is set at 3.17 because of find_package(CUDAToolkit)
 
-if (NOT ${CMAKE_VERSION} VERSION_LESS 3.27)
-    # new in 3.27: additionally use uppercase <PACKAGENAME>_ROOT
-    # environment and CMake variables for find_package
-    cmake_policy(SET CMP0144 NEW)
-endif()
-
 set(OOMPH_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${OOMPH_MODULE_PATH}")
 
@@ -28,6 +22,7 @@ endfunction()
 
 set_policy(CMP0074 NEW) # find_package uses XXX_ROOT vars using PackageName
 set_policy(CMP0144 NEW) # find_package allows XXX_ROOT vars using PACKAGENAME Uppercase
+set_policy(CMP0167 NEW) # find_package uses new boost config (boost 1.70 onwards)
 
 # ---------------------------------------------------------------------
 # CMake setup, C++ version, build type, modules, etc
@@ -92,7 +87,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.hpp.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/oomph/config.hpp @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/include/oomph/config.hpp
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/oomph)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.inc.in 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.inc.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/oomph/cmake_config.inc)
 
 # ---------------------------------------------------------------------

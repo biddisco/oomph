@@ -95,7 +95,7 @@ if (OOMPH_WITH_LIBFABRIC)
     set(OOMPH_LIBFABRIC_PROVIDER "tcp" CACHE
         STRING "The provider (cxi(Cray Slingshot)/efa(Amazon Elastic)/gni(Cray Gemini)/psm2(Intel Omni-Path)/tcp/verbs(Infiniband))")
     set_property(CACHE OOMPH_LIBFABRIC_PROVIDER PROPERTY STRINGS
-        "cxi" "efa" "gni" "psm2" "tcp" "verbs")
+        "cxi" "efa" "gni" "psm2" "tcp" "verbs" "shm")
 
     oomph_libfabric_add_config_define_namespace(
         DEFINE HAVE_LIBFABRIC_PROVIDER
@@ -141,6 +141,10 @@ if (OOMPH_WITH_LIBFABRIC)
         oomph_libfabric_add_config_define_namespace(
             DEFINE HAVE_LIBFABRIC_PSM2
             NAMESPACE libfabric)
+    elseif(OOMPH_LIBFABRIC_PROVIDER MATCHES "shm")
+        oomph_libfabric_add_config_define_namespace(
+            DEFINE HAVE_LIBFABRIC_SHM
+            NAMESPACE libfabric)
     endif()
 
     #------------------------------------------------------------------------------
@@ -171,6 +175,3 @@ if (OOMPH_WITH_LIBFABRIC)
     )
     target_include_directories(oomph_libfabric PRIVATE "${PROJECT_BINARY_DIR}/src/libfabric")
 endif()
-
-
-

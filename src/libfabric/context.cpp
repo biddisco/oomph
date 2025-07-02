@@ -24,7 +24,7 @@ static NS_DEBUG::enable_print<false> src_deb("__SRC__");
 using controller_type = libfabric::controller;
 
 context_impl::context_impl(MPI_Comm comm, bool thread_safe, bool message_pool_never_free,
-    std::size_t message_pool_reserve)
+    std::size_t message_pool_reserve, bool debug)
 : context_base(comm, thread_safe)
 , m_heap{this, message_pool_never_free, message_pool_reserve}
 , m_recv_cb_queue(128)
@@ -40,12 +40,12 @@ context_impl::context_impl(MPI_Comm comm, bool thread_safe, bool message_pool_ne
                         debug::ptr(m_ctxt_tag)));
 
     // TODO fix the thread safety
-    // problem: controller is a singleton and has problems when 2 contexts are created in the
-    // following order: single threaded first, then multi-threaded after
-    //int threads = thread_safe ? std::thread::hardware_concurrency() : 1;
-    //int threads = std::thread::hardware_concurrency();
+    // problem: controller is a singleton and has problems when 2 contexts are created 
+    // in the following order: single threaded first, then multi-threaded after
+    // int threads = thread_safe ? std::thread::hardware_concurrency() : 1;
+    // int threads = std::thread::hardware_concurrency();
     int threads = boost::thread::physical_concurrency();
-    m_controller = init_libfabric_controller(this, comm, rank, size, threads);
+    m_controller = init_libfabric_controller(this, comm, rank, size, threads, debug);
     m_domain = m_controller->get_domain();
 }
 
@@ -67,7 +67,9 @@ context_impl::get_transport_option(const std::string& opt)
     {
         static char buffer[32];
         std::string temp = std::to_string(m_controller->rendezvous_threshold());
-        strncpy(buffer, temp.c_str(), std::min(size_t(31), std::strlen(temp.c_str())));
+        if (temp.size()>31)
+          throw std::runtime_error("Bad string option check, fix please");
+        strcpy(buffer, temp.c_str());
         return buffer;
     }
     else { return "unspecified"; }
@@ -75,7 +77,7 @@ context_impl::get_transport_option(const std::string& opt)
 
 std::shared_ptr<controller_type>
 context_impl::init_libfabric_controller(oomph::context_impl* /*ctx*/, MPI_Comm comm, int rank,
-    int size, int threads)
+    int size, int threads, bool debug)
 {
     // only allow one thread to pass, make other wait
     static std::mutex                       m_init_mutex;
@@ -86,6 +88,7 @@ context_impl::init_libfabric_controller(oomph::context_impl* /*ctx*/, MPI_Comm c
         LF_DEB(src_deb, debug(NS_DEBUG::str<>("New Controller"), "rank", debug::dec<3>(rank),
                             "size", debug::dec<3>(size), "threads", debug::dec<3>(threads)));
         instance.reset(new controller_type());
+        if (debug) instance->enable_debug();
         instance->initialize(HAVE_LIBFABRIC_PROVIDER, rank == 0, size, threads, comm);
     }
     return instance;
